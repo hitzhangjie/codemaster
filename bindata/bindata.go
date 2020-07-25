@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -82,17 +81,13 @@ func main() {
 // ReadFromInputSource 从输入读取内容，可以是一个文件，也可以是一个目录（会先gzip压缩然后再返回内容）
 func ReadFromInputSource(inputSource string) (data []byte, err error) {
 
-	fin, err := os.Lstat(inputSource)
+	_, err = os.Lstat(inputSource)
 	if err != nil {
 		return nil, err
 	}
 
-	if !fin.IsDir() {
-		return ioutil.ReadFile(*input)
-	}
-
 	buf := bytes.Buffer{}
-	err = compress.Tar(*input, &buf)
+	err = compress.Tar(inputSource, &buf)
 	if err != nil {
 		return nil, err
 	}

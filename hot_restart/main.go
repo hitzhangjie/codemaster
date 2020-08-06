@@ -32,7 +32,7 @@ func getListener(network, address string) (net.Listener, error) {
 		return reuseport.Listen(network, address)
 	}
 
-	// BUG: https://github.com/libp2p/go-reuseport/issues/80
+	// Q&A: https://github.com/libp2p/go-reuseport/issues/80
 	//
 	// on darwin or iOS, reuseport again doesn't guarantee that the two sockets share the same queue,
 	// so no balancing work.

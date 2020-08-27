@@ -10,7 +10,7 @@ import (
 type Person struct {
 	Name string `json:"name"`
 	Age  int    `json:"age"`
-	Sex  int // 0:male, 1:female
+	Sex  int    // 0:male, 1:female
 }
 
 func TestInterfaceDynamicValueStruct(t *testing.T) {
@@ -18,7 +18,7 @@ func TestInterfaceDynamicValueStruct(t *testing.T) {
 	var inf interface{} = &Person{
 		Name: "zhangjie",
 		Age:  18,
-		Sex: 0,
+		Sex:  0,
 	}
 
 	dt := reflect.TypeOf(inf).Elem()
@@ -59,4 +59,16 @@ func TestXXX(t *testing.T) {
 		fmt.Printf("%d: %s %s = %v\n", i,
 			typeOfT.Field(i).Name, f.Type(), f.Interface())
 	}
+}
+
+func TestElementAndInterface(t *testing.T) {
+	rv := reflect.ValueOf(&Student{
+		Name: "xiaozhang",
+		Age:  100,
+	})
+	stu := rv.Interface().(*Student)
+	t.Logf("student: %v", stu)
+
+	stu2 := rv.Elem().Interface().(Student)
+	t.Logf("student: %v", stu2)
 }

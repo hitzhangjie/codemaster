@@ -3,6 +3,7 @@ module github.com/hitzhangjie/codemaster
 go 1.14
 
 require (
+	github.com/bnagy/gapstone v0.0.0-20190828052830-ede92aaeaba7
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/ftrvxmtrx/fd v0.0.0-20150925145434-c6d800382fff
 	github.com/golang/protobuf v1.4.1

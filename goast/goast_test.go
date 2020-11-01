@@ -43,7 +43,7 @@ func main() {
 `
 
 func TestGoAst_ParseFile(t *testing.T) {
-	file, err := parser.ParseFile(token.NewFileSet(), "main.go", src, parser.ParseComments)
+	file, err := parser.ParseFile(token.NewFileSet(), "pb_test.go", src, parser.ParseComments)
 	if err != nil {
 		t.Fatalf("parser.ParseFile: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestGoAst_ParseDir(t *testing.T) {
 
 func TestGoAst_ParseFile_AppendFunc(t *testing.T) {
 	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, "main.go", src, parser.ParseComments)
+	file, err := parser.ParseFile(fset, "pb_test.go", src, parser.ParseComments)
 	if err != nil {
 		t.Fatalf("parser.ParseFile: %v", err)
 	}

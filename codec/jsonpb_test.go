@@ -5,7 +5,9 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	person "github.com/hitzhangjie/codemaster/codec/testcase"
+	person2 "github.com/hitzhangjie/codemaster/codec/testcase2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -56,4 +58,52 @@ func TestJsonMarshal_WithoutOrigName(t *testing.T) {
 	err3 := marshaler.Marshal(&buf3, px)
 	assert.Nil(t, err3)
 	t.Logf("marshaled personx: %s", buf3.String())
+}
+
+func TestJsonMarshal_WithDefaultZeroValue(t *testing.T) {
+	p := &person.Person{
+		FirstName: "Jie",
+		LastName:  "Zhang",
+		Age:       29,
+		Sex:       0,
+	}
+
+	marshaler := jsonpb.Marshaler{
+		OrigName:     false, // json序列化的时候是否使用pb中原始的字段名，而非tag名
+		EnumsAsInts:  true,  // json序列化的时候是否将枚举值作为int
+		EmitDefaults: true,  // json序列化的时候是否要包含0值字段
+		Indent:       "",
+		AnyResolver:  nil,
+	}
+
+	buf := bytes.Buffer{}
+	err := marshaler.Marshal(&buf, p)
+	if err != nil {
+		t.Fatalf("jsonpb marshal error: %v", err)
+	}
+	t.Logf("jsonpb marshal ok, data:\n%s", buf.String())
+}
+
+func TestJsonMarshaler_WithPBSyntax2(t *testing.T) {
+	p := &person2.Person{
+		FirstName: proto.String("Jie"),
+		LastName:  proto.String("Zhang"),
+		Age:       proto.Uint32(29),
+		//Sex:       proto.Uint32(0),
+	}
+
+	marshaler := jsonpb.Marshaler{
+		OrigName:     false, // json序列化的时候是否使用pb中原始的字段名，而非tag名
+		EnumsAsInts:  true,  // json序列化的时候是否将枚举值作为int
+		EmitDefaults: true,  // json序列化的时候是否要包含0值字段
+		Indent:       "",
+		AnyResolver:  nil,
+	}
+
+	buf := bytes.Buffer{}
+	err := marshaler.Marshal(&buf, p)
+	if err != nil {
+		t.Fatalf("jsonpb marshal error: %v", err)
+	}
+	t.Logf("jsonpb marshal ok, data:\n%s", buf.String())
 }

@@ -5,6 +5,9 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	pb "github.com/hitzhangjie/codemaster/reflect/pb"
 )
 
 type Person struct {
@@ -71,4 +74,30 @@ func TestElementAndInterface(t *testing.T) {
 
 	stu2 := rv.Elem().Interface().(Student)
 	t.Logf("student: %v", stu2)
+}
+
+func TestJsonPBMessageInt64(t *testing.T) {
+	m := &JSONPBSerialization{}
+	p := pb.Player{
+		Uid:   100,
+		Level: 1,
+	}
+	s, err := m.Marshal(p)
+	assert.Nil(t, err)
+	t.Logf("marshal: %s\n", string(s))
+
+	s, err = m.Marshal(&p)
+	assert.Nil(t, err)
+	t.Logf("marshal: %s\n", string(s))
+
+	type Data struct {
+		A int
+		B int
+	}
+	d := Data{
+		A: 1,
+		B: 1,
+	}
+	_, err = m.Marshal(d)
+	assert.NotNil(t, err)
 }

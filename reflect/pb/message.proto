@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package trpc.test.helloworld;
+option go_package = "git.code.oa.com/trpcprotocol/test/helloworld";
+
+message Player {
+    int64 uid = 1;
+    int32 level = 3;
+}

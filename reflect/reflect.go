@@ -2,6 +2,7 @@ package reflect
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -34,8 +35,15 @@ func (s *JSONPBSerialization) Marshal(body interface{}) ([]byte, error) {
 			fmt.Println(newValue.Elem().Field(i))
 		}
 
+		//fmt.Printf("%s\n", newValue.Type().String())
+		//input = newValue.Interface().(proto.Message)
+
 		fmt.Printf("%s\n", newValue.Type().String())
-		input = newValue.Interface().(proto.Message)
+		var ok bool
+		input,ok = newValue.Interface().(proto.Message)
+		if !ok {
+			return nil, errors.New("value of body or pointer to value of body, not proto.Message")
+		}
 	}
 
 	//input, ok := body.(proto.Message)

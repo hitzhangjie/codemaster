@@ -1,3 +1,4 @@
+// Package slidingWindow 实现了一个滑动窗口统计滑动窗口内的最大值
 package slidingwindow
 
 import "time"

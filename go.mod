@@ -3,6 +3,7 @@ module github.com/hitzhangjie/codemaster
 go 1.14
 
 require (
+	git.code.oa.com/trpc-go/trpc-go v0.5.2
 	github.com/RoaringBitmap/roaring v0.5.5
 	github.com/davecgh/go-spew v1.1.1
 	github.com/ftrvxmtrx/fd v0.0.0-20150925145434-c6d800382fff
@@ -16,7 +17,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/v2pro/plz v0.0.0-20200805122259-422184e41b6e
 	go.uber.org/atomic v1.7.0
-	golang.org/x/net v0.0.0-20201021035429-f5854403a974
+	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
 	google.golang.org/grpc v1.27.0
 	google.golang.org/protobuf v1.25.0
 )

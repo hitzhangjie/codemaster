@@ -5,9 +5,10 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"unsafe"
 
-	"github.com/stretchr/testify/assert"
 	pb "github.com/hitzhangjie/codemaster/reflect/pb"
+	"github.com/stretchr/testify/assert"
 )
 
 type Person struct {
@@ -100,4 +101,61 @@ func TestJsonPBMessageInt64(t *testing.T) {
 	}
 	_, err = m.Marshal(d)
 	assert.NotNil(t, err)
+}
+
+type Thing struct {
+	Name   string
+	Price  float64
+	Points []Point
+}
+
+type Point struct {
+	x float64
+	y float64
+}
+
+func TestReflectFillStruct(t *testing.T) {
+
+	v := &Thing{}
+
+	rv := reflect.ValueOf(v).Elem()
+
+	// string, float fields
+	rv.FieldByName("Name").SetString("something")
+	rv.FieldByName("Price").SetFloat(100.0)
+
+	// slice of user-defined type
+	f := rv.FieldByName("Points")
+	if f.Kind() != reflect.Slice {
+		panic("field not slice")
+	}
+
+	// fill a new slice
+	if f.IsNil() {
+		points := reflect.MakeSlice(reflect.TypeOf([]Point{}), 4, 4)
+		i := points.Interface()
+		i.([]Point)[0] = Point{0, 0}
+		i.([]Point)[1] = Point{0, 1}
+		i.([]Point)[2] = Point{0, 2}
+		i.([]Point)[3] = Point{0, 3}
+		f.Set(points)
+	}
+
+	fmt.Printf("thing: %+v\n", v)
+
+	f.Interface().([]Point)[0] = Point{4, 4}
+	fmt.Printf("thing: %+v\n", v)
+
+	fmt.Printf("Thing.Points addr: %0x\n", f.UnsafeAddr())
+
+	// note: this breaks the unsafe.Pointer rules
+	points := *(*[]Point)(unsafe.Pointer(f.UnsafeAddr()))
+	fmt.Printf("Thing.Points: %+v\n", points)
+
+	// change existed slice
+
+	// note: prefer this method over unsafe.Pointer
+	println(f.CanAddr())
+	f.Interface().([]Point)[0] = Point{5, 5}
+	fmt.Printf("Thing.Points: %+v\n", points)
 }

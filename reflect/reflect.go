@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -40,7 +41,7 @@ func (s *JSONPBSerialization) Marshal(body interface{}) ([]byte, error) {
 
 		fmt.Printf("%s\n", newValue.Type().String())
 		var ok bool
-		input,ok = newValue.Interface().(proto.Message)
+		input, ok = newValue.Interface().(proto.Message)
 		if !ok {
 			return nil, errors.New("value of body or pointer to value of body, not proto.Message")
 		}
@@ -56,9 +57,17 @@ func (s *JSONPBSerialization) Marshal(body interface{}) ([]byte, error) {
 	//	return JSONAPI.Marshal(vv)
 	//}
 
+	marshaler := &jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: false,
+		Indent:       "",
+		AnyResolver:  nil,
+	}
+
 	buf := []byte{}
 	w := bytes.NewBuffer(buf)
-	err := Marshaler.Marshal(w, input)
+	err := marshaler.Marshal(w, input)
 	if err != nil {
 		return nil, err
 	}

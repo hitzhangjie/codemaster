@@ -153,3 +153,25 @@ func Test_DWARFReadVariable(t *testing.T) {
 		break
 	}
 }
+
+func Test_DWARFReadFunc(t *testing.T) {
+	f, err := elf.Open("fixtures/elf_read_dwarf")
+	assert.Nil(t, err)
+
+	dat, err := f.DWARF()
+	assert.Nil(t, err)
+
+	rd := reader.New(dat)
+	for {
+		die, err := rd.Next()
+		if err != nil {
+			break
+		}
+		if die == nil {
+			break
+		}
+		if die.Tag == dwarf.TagSubprogram {
+			fmt.Println(die)
+		}
+	}
+}

@@ -175,3 +175,7 @@ func Test_DWARFReadFunc(t *testing.T) {
 		}
 	}
 }
+
+func Test_DWARFReadLineNoTable(t *testing.T) {
+
+}

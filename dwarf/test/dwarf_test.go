@@ -3,14 +3,17 @@ package test
 import (
 	"debug/dwarf"
 	"debug/elf"
+	"encoding/binary"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/hitzhangjie/codemaster/dwarf/frame"
 	"github.com/hitzhangjie/codemaster/dwarf/godwarf"
 	"github.com/hitzhangjie/codemaster/dwarf/line"
 	"github.com/hitzhangjie/codemaster/dwarf/reader"
+	"github.com/hitzhangjie/codemaster/dwarf/regnum"
 )
 
 func Test_ElfReadDWARF(t *testing.T) {
@@ -202,5 +205,35 @@ func Test_DWARFReadLineNoTable(t *testing.T) {
 
 	for line, pcs := range lineToPCs {
 		fmt.Printf("lineNo:[elf_read_dwarf.go:%d] -> PC:%#x\n", line, pcs)
+	}
+}
+
+func Test_DWARFReadCFITable(t *testing.T) {
+	f, err := elf.Open("fixtures/elf_read_dwarf")
+	assert.Nil(t, err)
+
+	// 解析.[z]debug_frame中CFI信息表
+	dat, err := godwarf.GetDebugSection(f, "frame")
+	assert.Nil(t, err)
+	fdes, err := frame.Parse(dat, binary.LittleEndian, 0, 8, 0)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, fdes)
+
+	//for idx, fde := range fdes {
+	//	fmt.Printf("fde[%d], begin:%#x, end:%#x\n", idx, fde.Begin(), fde.End())
+	//}
+
+	for _, fde := range fdes {
+		if !fde.Cover(0x4b8640) {
+			continue
+		}
+		fmt.Printf("address 0x4b8640 is covered in FDE[%#x,%#x]\n", fde.Begin(), fde.End())
+		fc := fde.EstablishFrame(0x4b8640)
+		fmt.Printf("retAddReg: %s\n", regnum.AMD64ToName(fc.RetAddrReg))
+		switch fc.CFA.Rule {
+		case frame.RuleCFA:
+			fmt.Printf("cfa: rule:RuleCFA, CFA=(%s)+%#x\n", regnum.ARM64ToName(fc.CFA.Reg), fc.CFA.Offset)
+		default:
+		}
 	}
 }

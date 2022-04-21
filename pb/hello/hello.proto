@@ -1,5 +1,8 @@
-syntax = "proto2";
+syntax = "proto3";
 package hello;
 
-message HelloReq{}
+message HelloReq{
+  int32 code = 1;
+  string msg = 2;
+}
 

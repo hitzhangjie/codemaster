@@ -1,0 +1,3 @@
+单独看这个无锁queue比mutex+slice、chan性能都要好，但是当实际使用时并发量上来后，大量的goroutine CAS可能还是会导致整体效率下降，反而不如mutex锁逐步膨胀带来的效率好。
+
+使用后记得做下benchmark，我在做rpc性能统计时需要用到一个sliding window，基于该无锁队列实现的版本，并没有比基于chan实现的版本好到哪里去，反而性能在并发量大时更差。

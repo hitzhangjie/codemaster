@@ -1,124 +1,102 @@
-// Package slidingWindow 实现了一个滑动窗口统计滑动窗口内的最大值
 package slidingwindow
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
-// Clock specifies the needed time related functions used by the time series.
-// To use a custom clock implement the interface and pass it to the time series constructor.
-// The default clock uses time.Now()
-type Clock interface {
-	Now() time.Time
+// SlidingWindow sliding window consists two windows `curr` and `prev`,
+// the window is advanced when recording events.
+type SlidingWindow struct {
+	size time.Duration
+
+	mu sync.Mutex
+
+	curr *window
+	prev *window
 }
 
-// defaultClock is used in case no clock is provided to the constructor.
-type defaultClock struct{}
+// NewSlidingWindow creates a new slidingwindow
+func NewSlidingWindow(size time.Duration) *SlidingWindow {
+	currWin := newLocalWindow()
 
-func (c *defaultClock) Now() time.Time {
-	return time.Now()
-}
+	// The previous window is static (i.e. no add changes will happen within it),
+	// so we always create it as an instance of window.
+	//
+	// In this way, the whole limiter, despite containing two windows, now only
+	// consumes at most one goroutine for the possible sync behaviour within
+	// the current window.
+	prevWin := newLocalWindow()
 
-type slidingWindow struct {
-	buffer []float64
-	length int
-
-	end   time.Time
-	start time.Time
-
-	oldest int
-	newest int
-
-	step     time.Duration
-	duration time.Duration
-
-	clock Clock
-}
-
-var defaultStep = time.Hour * 24
-var defaultDuration = time.Hour * 24 * 7
-
-type options struct {
-	clock Clock
-
-	step     time.Duration
-	duration time.Duration
-}
-
-type option func(*options)
-
-func WithStep(step time.Duration) option {
-	return func(o *options) {
-		o.step = step
+	return &SlidingWindow{
+		size: size,
+		curr: currWin,
+		prev: prevWin,
 	}
 }
 
-func WithDuration(duration time.Duration) option {
-	return func(o *options) {
-		o.duration = duration
-	}
+// Size returns the time duration of one window size. Note that the size
+// is defined to be read-only, if you need to change the size,
+// create a new limiter with a new size instead.
+func (sw *SlidingWindow) Size() time.Duration {
+	return sw.size
 }
 
-func WithClock(clock Clock) option {
-	return func(o *options) {
-		o.clock = clock
-	}
+// Allow is shorthand for AllowN(time.Now(), 1).
+func (sw *SlidingWindow) Record() {
+	sw.RecordN(time.Now(), 1)
 }
 
-func NewSlidingWindow(os ...option) *slidingWindow {
-	opts := options{}
-	for _, o := range os {
-		o(&opts)
-	}
-	if opts.clock == nil {
-		opts.clock = &defaultClock{}
-	}
-	if opts.step.Nanoseconds() == 0 {
-		opts.step = defaultStep
-	}
-	if opts.duration.Nanoseconds() == 0 {
-		opts.duration = defaultDuration
-	}
-	return newSlidingWindow(opts.step, opts.duration, opts.clock)
+// AllowN reports whether n events may happen at time now.
+func (sw *SlidingWindow) RecordN(now time.Time, n int64) {
+	sw.mu.Lock()
+	defer sw.mu.Unlock()
+
+	sw.advance(now)
+	sw.curr.AddCount(n)
 }
 
-func newSlidingWindow(step time.Duration, duration time.Duration, clock Clock) *slidingWindow {
-	length := int(duration / step)
-	now := clock.Now()
-	return &slidingWindow{
-		buffer:   make([]float64, length),
-		length:   length,
-		end:      now.Truncate(step).Add(-duration),
-		start:    now,
-		step:     step,
-		duration: duration,
-		oldest:   1,
-		clock:    clock,
-	}
+func (sw *SlidingWindow) Count() int64 {
+	sw.mu.Lock()
+	defer sw.mu.Unlock()
+
+	now := time.Now()
+	sw.advance(now)
+
+	elapsed := now.Sub(sw.curr.Start())
+	weight := float64(sw.size-elapsed) / float64(sw.size)
+	count := int64(weight*float64(sw.prev.Count())) + sw.curr.Count()
+
+	return count
 }
 
-func (sw *slidingWindow) Insert(score float64) {
-	sw.advance()
-	if score > sw.buffer[sw.newest] {
-		sw.buffer[sw.newest] = score
-	}
-}
+// advance updates the current/previous windows resulting from the passage of time.
+func (sw *SlidingWindow) advance(now time.Time) {
+	// Calculate the start boundary of the expected current-window.
+	newCurrStart := now.Truncate(sw.size)
 
-func (sw *slidingWindow) Max() float64 {
-	sw.advance()
-	max := 0.0
-	for i := range sw.buffer {
-		if sw.buffer[i] > max {
-			max = sw.buffer[i]
-		}
-	}
-	return max
-}
+	diffSize := newCurrStart.Sub(sw.curr.Start()) / sw.size
 
-func (sw *slidingWindow) advance() {
-	newEnd := sw.clock.Now().Truncate(sw.step).Add(-sw.duration)
-	for newEnd.After(sw.end) {
-		sw.end = sw.end.Add(sw.step)
-		sw.buffer[sw.oldest] = 0.0
-		sw.newest = sw.oldest
-		sw.oldest = (sw.oldest + 1) % sw.length
+	// Fast path, the same window
+	if diffSize == 0 {
+		return
 	}
+
+	// Slow path, the current-window is at least one-window-size behind the expected one.
+
+	// The new current-window always has zero count.
+	sw.curr.Reset(newCurrStart, 0)
+
+	// reset previous window
+	newPrevCount := int64(0)
+	if diffSize == 1 {
+		// The new previous-window will overlap with the old current-window,
+		// so it inherits the count.
+		//
+		// Note that the count here may be not accurate, since it is only a
+		// SNAPSHOT of the current-window's count, which in itself tends to
+		// be inaccurate due to the asynchronous nature of the sync behaviour.
+		newPrevCount = sw.curr.Count()
+	}
+	sw.prev.Reset(newCurrStart.Add(-sw.size), newPrevCount)
 }

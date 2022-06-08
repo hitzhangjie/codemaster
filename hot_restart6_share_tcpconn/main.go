@@ -75,8 +75,14 @@ func startTCPServer() error {
 					if err != nil {
 						panic(err)
 					}
+
 					forkWithFile(f)
 					f.Close()
+
+					// 实际上这里的shutdown read无效，为什么呢？有可能是因为这个tcpconn被多个fd共享着呢，只有所有的fd都关闭了有可能才有效，
+					if err := syscall.Shutdown(int(f.Fd()), syscall.SHUT_RD); err != nil {
+						panic(err)
+					}
 				}
 			}()
 

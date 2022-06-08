@@ -1,6 +1,4 @@
 
-### build
-
 ```bash
 $ go build -v
 
@@ -61,11 +59,7 @@ then we see:
 1234
 1234
 1234 <= keep input data
-1234
-1234
-1234
-1234
-1234
+1111111111111111111111111122222222222222222222222222 <= 超过了buffer大小，目的是增加两个进程分别loop read的几率
 ```
 
 then we see the data is read and output by the the parent and foked child process:
@@ -74,45 +68,15 @@ then we see the data is read and output by the the parent and foked child proces
 2022/06/08 18:45:01 pid: 43658, conn read 5 bytes, val: [49 50 51 52 10 0 0 0] <= pid 43658
 2022/06/08 18:45:03 pid: 43658, conn read 5 bytes, val: [49 50 51 52 10 0 0 0]
 2022/06/08 18:45:04 pid: 43658, conn read 5 bytes, val: [49 50 51 52 10 0 0 0]
-2022/06/08 18:45:05 pid: 43587, conn read 5 bytes, val: [49 50 51 52 10 0 0 0] <= pid 43587
-2022/06/08 18:45:07 pid: 43587, conn read 5 bytes, val: [49 50 51 52 10 0 0 0]
-2022/06/08 18:45:08 pid: 43587, conn read 5 bytes, val: [49 50 51 52 10 0 0 0]
-
+....
+2022/06/08 ........ pid: p1, conn read 8 bytes, val: [49 49 49 49 49 49 49 49] <= 可以看到数据在两个进程循环被读取到, p1表示父进程，p2表示子进程
+2022/06/08 ........ pid: p2, conn read 8 bytes, val: [49 49 49 49 49 49 49 49]
+2022/06/08 ........ pid: p1, conn read 8 bytes, val: [49 49 49 49 49 49 49 49]
+2022/06/08 ........ pid: p2, conn read 8 bytes, val: [49 50 50 50 50 50 50 50]
+2022/06/08 ........ pid: p1, conn read 8 bytes, val: [50 50 50 50 50 50 50 50]
+2022/06/08 ........ pid: p2, conn read 8 bytes, val: [50 50 50 50 50 50 50 50]
+2022/06/08 ........ pid: p1, conn read 6 bytes, val: [50 50 50 50 50 10 0 0]
 ```
 
-obviously, the network stack distribute the IO read-ready event to the different processes!
-
-we can also use `lsof` to make sure whether the tcpconn is shared between the parent and forked processes.
-Absolutely Yes!
-
-What's more we see is that on darwin/amd64, each process seems create two file descriptors for the same tcpconn,
-Is it some optimization Go does?
-
-```bash
-$ lsof -Pi tcp:8888
-
-COMMAND     PID     USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
-share_tcp 43587 zhangjie    3u  IPv4 0x70f6484c55859ca5      0t0  TCP *:8888 (LISTEN)
-share_tcp 43587 zhangjie    7u  IPv4 0x70f6484c68318f05      0t0  TCP localhost:8888->localhost:62019 (ESTABLISHED)
-share_tcp 43587 zhangjie   10u  IPv4 0x70f6484c68318f05      0t0  TCP localhost:8888->localhost:62019 (ESTABLISHED)
-nc        43618 zhangjie    5u  IPv4 0x70f6484c4c67b8e5      0t0  TCP localhost:62019->localhost:8888 (ESTABLISHED)
-share_tcp 43658 zhangjie    3u  IPv4 0x70f6484c68318f05      0t0  TCP localhost:8888->localhost:62019 (ESTABLISHED)
-share_tcp 43658 zhangjie    4u  IPv4 0x70f6484c68318f05      0t0  TCP localhost:8888->localhost:62019 (ESTABLISHED)
-```
-
-Actually, No! The Fd will be duplicated when we call `tcpconn.File().Fd()` and `os.NewFile(uintptr(fd), "name").
-
-After add some f.Close() then we test it again and find `lsof -Pi tcp:8888` outputs:
-
-```bash
-$ lsof -Pi tcp:8888
-COMMAND     PID     USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
-share_tcp 47491 zhangjie    3u  IPv4 0x70f6484c5162d8e5      0t0  TCP *:8888 (LISTEN)
-share_tcp 47491 zhangjie    7u  IPv4 0x70f6484c58ad1a45      0t0  TCP localhost:8888->localhost:64529 (ESTABLISHED)
-nc        47514 zhangjie    5u  IPv4 0x70f6484c71cba685      0t0  TCP localhost:64529->localhost:8888 (ESTABLISHED)
-share_tcp 47543 zhangjie    4u  IPv4 0x70f6484c58ad1a45      0t0  TCP localhost:8888->localhost:64529 (ESTABLISHED)
-```
-
-The same tcpconn has only 1 Fd, which is the expected result.
-
-
+有什么办法让p1不读取，只让p2读取呢？那不是很简单：没读取到应用程序buf中的数据是停留在socket buf中的，p1检测到热重启停止读取就可以了啊，让p2读取就是后到的数据，
+如果需要迁移连接数据的话，直接让p1把连接上的数据通过unix套接字传过去给p2，p2把后面读到的连接上的数据追加在p1传过来的数据末尾，就完成数据迁移了。

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hitzhangjie/codemaster/lockfree"
+	"github.com/hitzhangjie/codemaster/slidingwindow_lockfree/internal/lockfree"
 )
 
 func TestQueueDequeueEmpty(t *testing.T) {

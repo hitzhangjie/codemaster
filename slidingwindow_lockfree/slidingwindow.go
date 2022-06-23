@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.code.oa.com/trpc-go/trpc-filter/tvar/slidingwindow/internal/lockfree"
+	"github.com/hitzhangjie/codemaster/slidingwindow_lockfree/internal/lockfree"
 )
 
 // SlidingWindow sliding window consists two windows `curr` and `prev`,

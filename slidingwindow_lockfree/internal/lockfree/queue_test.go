@@ -114,7 +114,6 @@ func (c *chanQueue) Dequeue() interface{} {
 //go test -bench=BenchmarkLockFreeQueue -count=5
 //goos: darwin
 //goarch: amd64
-//pkg: git.code.oa.com/trpc-go/trpc-filter/tvar/slidingwindow/internal/lockfree
 //cpu: Intel(R) Core(TM) i7-8569U CPU @ 2.80GHz
 //BenchmarkLockFreeQueue-8        64692733                18.32 ns/op
 //BenchmarkLockFreeQueue-8        64811620                18.19 ns/op
@@ -147,7 +146,6 @@ func BenchmarkLockFreeQueue(b *testing.B) {
 //go test -bench=BenchmarkMutexSliceQueue -count=5
 //goos: darwin
 //goarch: amd64
-//pkg: git.code.oa.com/trpc-go/trpc-filter/tvar/slidingwindow/internal/lockfree
 //cpu: Intel(R) Core(TM) i7-8569U CPU @ 2.80GHz
 //BenchmarkMutexSliceQueue-8      14319187                84.40 ns/op
 //BenchmarkMutexSliceQueue-8      14222097                86.08 ns/op
@@ -180,7 +178,6 @@ func BenchmarkMutexSliceQueue(b *testing.B) {
 //go test -bench=BenchmarkChanQueue -count=5
 //goos: darwin
 //goarch: amd64
-//pkg: git.code.oa.com/trpc-go/trpc-filter/tvar/slidingwindow/internal/lockfree
 //cpu: Intel(R) Core(TM) i7-8569U CPU @ 2.80GHz
 //BenchmarkChanQueue-8     3246128               373.2 ns/op
 //BenchmarkChanQueue-8     3177400               462.6 ns/op

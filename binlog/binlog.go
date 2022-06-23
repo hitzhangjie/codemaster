@@ -1,11 +1,17 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"os"
-	"time"
 
+	"github.com/go-mysql-org/go-mysql/mysql"
 	"github.com/go-mysql-org/go-mysql/replication"
 )
+
+var binlogFile = "binlog.000001"
+var binlogPos = uint32(0)
 
 func main() {
 	// Create a binlog syncer with a unique server id, the server id must be different from other MySQL's.
@@ -16,7 +22,7 @@ func main() {
 		Host:     "127.0.0.1",
 		Port:     3306,
 		User:     "root",
-		Password: "",
+		Password: "justdoit",
 	}
 	syncer := replication.NewBinlogSyncer(cfg)
 
@@ -29,22 +35,18 @@ func main() {
 	// the mariadb GTID set likes this "0-1-100"
 
 	for {
-		ev, _ := streamer.GetEvent(context.Background())
+		ev, err := streamer.GetEvent(context.Background())
+		if err != nil {
+			fmt.Println("GetEvent err: %v", err)
+			break
+		}
 		// Dump event
 		ev.Dump(os.Stdout)
-	}
-
-	// or we can use a timeout context
-	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		ev, err := s.GetEvent(ctx)
-		cancel()
-
-		if err == context.DeadlineExceeded {
-			// meet timeout
+		vv, ok := ev.Event.(*replication.RowsEvent)
+		if !ok {
 			continue
 		}
-
-		ev.Dump(os.Stdout)
+		b, _ := json.Marshal(vv.Table)
+		fmt.Println(string(b))
 	}
 }

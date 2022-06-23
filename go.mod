@@ -6,7 +6,7 @@ require (
 	github.com/RoaringBitmap/roaring v0.9.4
 	github.com/davecgh/go-spew v1.1.1
 	github.com/ftrvxmtrx/fd v0.0.0-20150925145434-c6d800382fff
-	github.com/gogo/protobuf v1.3.2
+	github.com/go-mysql-org/go-mysql v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/iancoleman/strcase v0.2.0
 	github.com/lafikl/consistent v0.0.0-20210222184039-5e8acd7e59f2

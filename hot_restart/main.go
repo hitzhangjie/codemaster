@@ -45,8 +45,8 @@ func getListener(network, address string) (net.Listener, error) {
 	//
 	// so, how to get the listenerFD? Is it exactly 3? Yes!
 	// When ForkExec runs, it first fork the process in which only the files in &ProcAttr{...} are shared!
-	// 0:stdin, 1:stdout, 2:stderr, listenerFD maybe 3 or 10 or other integer, but PID are allocated from the unused
-	// minimum pid space, so the listener must be 3!
+	// 0:stdin, 1:stdout, 2:stderr, listenerFD maybe 3 or 10 or other integer, but FD are allocated from the unused
+	// minimum fd space, so the listenerFD must be 3!
 	fmt.Println("hot restart: server started")
 	os.Setenv(hotRestartFlag, "")
 

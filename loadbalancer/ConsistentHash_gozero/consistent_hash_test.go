@@ -12,7 +12,7 @@ import (
 	"github.com/cespare/xxhash/v2"
 	stat "github.com/montanaflynn/stats"
 
-	"git.code.oa.com/zhijiezhang/loadbalancer/ConsistentHash_gozero/hash"
+	"github.com/hitzhangjie/codemaster/loadbalancer/ConsistentHash_gozero/hash"
 )
 
 var (

@@ -18,8 +18,10 @@ require (
 	github.com/montanaflynn/stats v0.6.6
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1
+	github.com/spaolacci/murmur3 v1.1.0
 	github.com/stretchr/testify v1.8.0
 	github.com/v2pro/plz v0.0.0-20200805122259-422184e41b6e
+	github.com/zeebo/xxh3 v1.0.2
 	github.com/zeromicro/go-zero v1.3.5
 	go.opentelemetry.io/otel v1.8.0
 	go.opentelemetry.io/otel/metric v0.30.0

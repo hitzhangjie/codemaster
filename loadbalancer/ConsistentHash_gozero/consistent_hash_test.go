@@ -11,6 +11,7 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	stat "github.com/montanaflynn/stats"
+	"github.com/zeebo/xxh3"
 
 	"github.com/hitzhangjie/codemaster/loadbalancer/ConsistentHash_gozero/hash"
 )
@@ -61,6 +62,13 @@ var (
 2022/08/03 15:28:49 case: replicas:1000+hash:xxhash.Sum64 times: 1000000 标准方差: 3148.5766943176086  max: 106134  min: 95150 (max-min)/times: 0.010984 peak/mean: 1.06134
 2022/08/03 15:28:50 case: replicas:2000+hash:xxhash.Sum64 times: 1000000 标准方差: 1664.1786562746202  max: 103375  min: 96885 (max-min)/times: 0.00649 peak/mean: 1.03375
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+2022/08/11 16:40:45 case: replicas:50+hash:xxhash3.Hash64 times: 1000000 标准方差: 7603.68696094204  max: 109469  min: 82863 (max-min)/times: 0.026606 peak/mean: 1.09469 ok
+2022/08/11 16:40:45 case: replicas:100+hash:xxhash3.Hash64 times: 1000000 标准方差: 7820.6347440601  max: 110422  min: 82739 (max-min)/times: 0.027683 peak/mean: 1.10422 ok
+2022/08/11 16:40:45 case: replicas:200+hash:xxhash3.Hash64 times: 1000000 标准方差: 7966.721772473293  max: 114431  min: 86124 (max-min)/times: 0.028307 peak/mean: 1.14431 worse than xxhash
+2022/08/11 16:40:46 case: replicas:500+hash:xxhash3.Hash64 times: 1000000 标准方差: 6829.993455340935  max: 112575  min: 87118 (max-min)/times: 0.025457 peak/mean: 1.12575 worse than xxhash
+2022/08/11 16:40:46 case: replicas:1000+hash:xxhash3.Hash64 times: 1000000 标准方差: 2860.680373617437  max: 104301  min: 95025 (max-min)/times: 0.009276 peak/mean: 1.04301 ok
+2022/08/11 16:40:46 case: replicas:2000+hash:xxhash3.Hash64 times: 1000000 标准方差: 2263.951059541703  max: 104415  min: 95723 (max-min)/times: 0.008692 peak/mean: 1.04415 worse than xxhash
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 2022/08/03 15:28:50 case: replicas:100+hash:crc32.ChecksumIEEE times: 1000000 标准方差: 16188.201024202783  max: 121890  min: 69629 (max-min)/times: 0.052261 peak/mean: 1.2189
 2022/08/03 15:28:50 case: replicas:200+hash:crc32.ChecksumIEEE times: 1000000 标准方差: 11440.727826497754  max: 126050  min: 82970 (max-min)/times: 0.04308 peak/mean: 1.2605
 2022/08/03 15:28:50 case: replicas:500+hash:crc32.ChecksumIEEE times: 1000000 标准方差: 17259.726985094523  max: 130659  min: 69507 (max-min)/times: 0.061152 peak/mean: 1.30659
@@ -83,6 +91,13 @@ func Test_ConsistentHash(t *testing.T) {
 		{500, xxHashFunc, "xxhash.Sum64"},
 		{1000, xxHashFunc, "xxhash.Sum64"},
 		{2000, xxHashFunc, "xxhash.Sum64"},
+		// xxhash3
+		{50, xxHash3Func, "xxhash3.Hash64"},
+		{100, xxHash3Func, "xxhash3.Hash64"},
+		{200, xxHash3Func, "xxhash3.Hash64"},
+		{500, xxHash3Func, "xxhash3.Hash64"},
+		{1000, xxHash3Func, "xxhash3.Hash64"},
+		{2000, xxHash3Func, "xxhash3.Hash64"},
 		// crc32 (trpcgo用的），
 		{100, crc32HashFunc, "crc32.ChecksumIEEE"},
 		{200, crc32HashFunc, "crc32.ChecksumIEEE"},
@@ -152,6 +167,10 @@ func doTest(arg arg) {
 
 func xxHashFunc(data []byte) uint64 {
 	return xxhash.Sum64(data)
+}
+
+func xxHash3Func(data []byte) uint64 {
+	return xxh3.Hash(data)
 }
 
 func metroHashFunc(data []byte) uint64 {

@@ -2,14 +2,17 @@ package ConsistentHash_gozero
 
 import (
 	"fmt"
+	"hash/crc32"
 	"log"
 	"math"
 	"math/rand"
 	"strconv"
 	"testing"
 
+	"github.com/cespare/xxhash/v2"
 	stat "github.com/montanaflynn/stats"
-	"github.com/zeromicro/go-zero/core/hash"
+
+	"git.code.oa.com/zhijiezhang/loadbalancer/ConsistentHash_gozero/hash"
 )
 
 var (
@@ -39,31 +42,71 @@ var (
 	}
 )
 
-// 负载也不十分均衡，标准方差很大，ok，我们关注下 (max-min)/times 吧，
-// 最大负载和最小负载的差距，占总负载的百分比：这个差不多稳定在 5% 左右。
+// ring-based一致性hash不均匀的问题可以通过优化hash函数、虚节点数来优化，
+// peak-to-mean优化到1.05基本就不错了，表示最大负载和平均负载相差不超过5%
+//
+// 比较之下，xxhash的均匀度是比较好的，而且其性能在其他zero-allocation hash benchmark测评中也比较好。
 /*
-2022/08/01 16:30:32 times: 10000 标准方差: 139.45823747631403  max: 1263  min: 778 (max-min)/times: 0.0485
-2022/08/01 16:30:32 times: 20000 标准方差: 299.2417083228874  max: 2593  min: 1503 (max-min)/times: 0.0545
-2022/08/01 16:30:32 times: 30000 标准方差: 445.59174139564124  max: 3836  min: 2290 (max-min)/times: 0.051533333333333334
-2022/08/01 16:30:32 times: 40000 标准方差: 588.7150414249666  max: 5090  min: 3046 (max-min)/times: 0.0511
-2022/08/01 16:30:32 times: 50000 标准方差: 743.5193339786128  max: 6364  min: 3807 (max-min)/times: 0.05114
-2022/08/01 16:30:32 times: 60000 标准方差: 882.5136826134766  max: 7644  min: 4641 (max-min)/times: 0.05005
-2022/08/01 16:30:32 times: 70000 标准方差: 1045.6639039385457  max: 8889  min: 5360 (max-min)/times: 0.05041428571428572
-2022/08/01 16:30:32 times: 80000 标准方差: 1181.2622062861403  max: 10132  min: 6132 (max-min)/times: 0.05
-2022/08/01 16:30:32 times: 90000 标准方差: 1313.245750040715  max: 11381  min: 6930 (max-min)/times: 0.04945555555555556
-2022/08/01 16:30:32 times: 100000 标准方差: 1464.6088897722832  max: 12632  min: 7644 (max-min)/times: 0.04988
-2022/08/01 16:30:32 times: 110000 标准方差: 1598.7097297508387  max: 13880  min: 8410 (max-min)/times: 0.049727272727272724
-...
-2022/08/01 16:30:32 times: 950000 标准方差: 13873.532261107839  max: 120543  min: 72623 (max-min)/times: 0.05044210526315789
-2022/08/01 16:30:32 times: 960000 标准方差: 14034.086090657987  max: 121817  min: 73363 (max-min)/times: 0.050472916666666666
-2022/08/01 16:30:32 times: 970000 标准方差: 14175.134002893941  max: 123039  min: 74104 (max-min)/times: 0.05044845360824742
-2022/08/01 16:30:32 times: 980000 标准方差: 14327.665071462272  max: 124256  min: 74861 (max-min)/times: 0.050403061224489794
-2022/08/01 16:30:32 times: 990000 标准方差: 14470.17734514681  max: 125500  min: 75630 (max-min)/times: 0.050373737373737376
-2022/08/01 16:30:32 times: 1000000 标准方差: 14628.560790453721  max: 126737  min: 76395 (max-min)/times: 0.050342
-[88947 76395 104058 99622 93732 109073 126737 94078 120192 87166]
+2022/08/03 15:28:47 case: replicas:50+hash:murmur3.Sum64 times: 1000000 标准方差: 14628.560790453721  max: 126737  min: 76395 (max-min)/times: 0.050342 peak/mean: 1.26737
+2022/08/03 15:28:47 case: replicas:100+hash:murmur3.Sum64 times: 1000000 标准方差: 14555.295022774357  max: 127129  min: 76438 (max-min)/times: 0.050691 peak/mean: 1.27129
+2022/08/03 15:28:48 case: replicas:200+hash:murmur3.Sum64 times: 1000000 标准方差: 6902.00454940447  max: 110178  min: 85121 (max-min)/times: 0.025057 peak/mean: 1.10178
+2022/08/03 15:28:48 case: replicas:500+hash:murmur3.Sum64 times: 1000000 标准方差: 2285.3205902017335  max: 105277  min: 97136 (max-min)/times: 0.008141 peak/mean: 1.05277
+2022/08/03 15:28:48 case: replicas:1000+hash:murmur3.Sum64 times: 1000000 标准方差: 2069.765928794848  max: 104603  min: 97606 (max-min)/times: 0.006997 peak/mean: 1.04603
+2022/08/03 15:28:48 case: replicas:2000+hash:murmur3.Sum64 times: 1000000 标准方差: 2618.900303562547  max: 104628  min: 94870 (max-min)/times: 0.009758 peak/mean: 1.04628
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+2022/08/03 15:28:48 case: replicas:50+hash:xxhash.Sum64 times: 1000000 标准方差: 8627.559643375409  max: 119229  min: 91110 (max-min)/times: 0.028119 peak/mean: 1.19229
+2022/08/03 15:28:49 case: replicas:100+hash:xxhash.Sum64 times: 1000000 标准方差: 8918.29840272235  max: 120236  min: 90692 (max-min)/times: 0.029544 peak/mean: 1.20236
+2022/08/03 15:28:49 case: replicas:200+hash:xxhash.Sum64 times: 1000000 标准方差: 5913.828556865679  max: 111947  min: 89811 (max-min)/times: 0.022136 peak/mean: 1.11947
+2022/08/03 15:28:49 case: replicas:500+hash:xxhash.Sum64 times: 1000000 标准方差: 4256.551350565384  max: 107631  min: 93326 (max-min)/times: 0.014305 peak/mean: 1.07631
+2022/08/03 15:28:49 case: replicas:1000+hash:xxhash.Sum64 times: 1000000 标准方差: 3148.5766943176086  max: 106134  min: 95150 (max-min)/times: 0.010984 peak/mean: 1.06134
+2022/08/03 15:28:50 case: replicas:2000+hash:xxhash.Sum64 times: 1000000 标准方差: 1664.1786562746202  max: 103375  min: 96885 (max-min)/times: 0.00649 peak/mean: 1.03375
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+2022/08/03 15:28:50 case: replicas:100+hash:crc32.ChecksumIEEE times: 1000000 标准方差: 16188.201024202783  max: 121890  min: 69629 (max-min)/times: 0.052261 peak/mean: 1.2189
+2022/08/03 15:28:50 case: replicas:200+hash:crc32.ChecksumIEEE times: 1000000 标准方差: 11440.727826497754  max: 126050  min: 82970 (max-min)/times: 0.04308 peak/mean: 1.2605
+2022/08/03 15:28:50 case: replicas:500+hash:crc32.ChecksumIEEE times: 1000000 标准方差: 17259.726985094523  max: 130659  min: 69507 (max-min)/times: 0.061152 peak/mean: 1.30659
+2022/08/03 15:28:50 case: replicas:1000+hash:crc32.ChecksumIEEE times: 1000000 标准方差: 21791.261533009052  max: 137256  min: 72892 (max-min)/times: 0.064364 peak/mean: 1.37256
+2022/08/03 15:28:51 case: replicas:2000+hash:crc32.ChecksumIEEE times: 1000000 标准方差: 12953.256825987819  max: 120299  min: 73664 (max-min)/times: 0.046635 peak/mean: 1.20299
 */
 func Test_ConsistentHash(t *testing.T) {
-	chash := hash.NewConsistentHash()
+	args := []arg{
+		// murmur3
+		{50, hash.Hash, "murmur3.Sum64"},
+		{100, hash.Hash, "murmur3.Sum64"},
+		{200, hash.Hash, "murmur3.Sum64"},
+		{500, hash.Hash, "murmur3.Sum64"},
+		{1000, hash.Hash, "murmur3.Sum64"},
+		{2000, hash.Hash, "murmur3.Sum64"},
+		// xxhash
+		{50, xxHashFunc, "xxhash.Sum64"},
+		{100, xxHashFunc, "xxhash.Sum64"},
+		{200, xxHashFunc, "xxhash.Sum64"},
+		{500, xxHashFunc, "xxhash.Sum64"},
+		{1000, xxHashFunc, "xxhash.Sum64"},
+		{2000, xxHashFunc, "xxhash.Sum64"},
+		// crc32 (trpcgo用的），
+		{100, crc32HashFunc, "crc32.ChecksumIEEE"},
+		{200, crc32HashFunc, "crc32.ChecksumIEEE"},
+		{500, crc32HashFunc, "crc32.ChecksumIEEE"},
+		{1000, crc32HashFunc, "crc32.ChecksumIEEE"},
+		{2000, crc32HashFunc, "crc32.ChecksumIEEE"},
+	}
+	for i := 0; i < len(args); i++ {
+		doTest(args[i])
+	}
+}
+
+type arg struct {
+	replicas int
+	hash     hash.Func
+	hashName string
+}
+
+func (a arg) String() string {
+	return fmt.Sprintf("replicas:%d+hash:%s", a.replicas, a.hashName)
+}
+
+func doTest(arg arg) {
+	chash := hash.NewCustomConsistentHash(arg.replicas, arg.hash)
 	for i := 0; i < len(hosts); i++ {
 		chash.Add(hosts[i])
 	}
@@ -95,13 +138,26 @@ func Test_ConsistentHash(t *testing.T) {
 			}
 		}
 
-		// 计算hash到的次数的方差
-		data := count[:]
-		sdev, _ := stat.Variance(data)
-		sdev = math.Pow(sdev, 0.5)
-		max, _ := stat.Max(data)
-		min, _ := stat.Min(data)
-		log.Println("times:", times, "标准方差:", sdev, " max:", max, " min:", min, "(max-min)/times:", float64(max-min)/float64(times))
 	}
-	fmt.Println(count)
+	// 计算hash到的次数的方差
+	data := count[:]
+	sdev, _ := stat.Variance(data)
+	sdev = math.Pow(sdev, 0.5)
+	max, _ := stat.Max(data)
+	min, _ := stat.Min(data)
+	mean, _ := stat.Mean(data)
+	log.Println("case:", arg, "times:", times, "标准方差:", sdev, " max:", max, " min:", min, "(max-min)/times:", float64(max-min)/float64(times), "peak/mean:", max/mean)
+	//fmt.Println(count)
+}
+
+func xxHashFunc(data []byte) uint64 {
+	return xxhash.Sum64(data)
+}
+
+func metroHashFunc(data []byte) uint64 {
+	return 0
+}
+
+func crc32HashFunc(data []byte) uint64 {
+	return uint64(crc32.ChecksumIEEE(data))
 }

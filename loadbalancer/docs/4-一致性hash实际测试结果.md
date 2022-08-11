@@ -1,0 +1,1 @@
+详见ConsistentHash-gozero下的README.md

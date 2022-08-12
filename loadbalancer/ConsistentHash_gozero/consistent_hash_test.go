@@ -13,6 +13,8 @@ import (
 	stat "github.com/montanaflynn/stats"
 	"github.com/zeebo/xxh3"
 
+	"github.com/zhenjl/cityhash"
+
 	"github.com/hitzhangjie/codemaster/loadbalancer/ConsistentHash_gozero/hash"
 )
 
@@ -78,32 +80,36 @@ var (
 func Test_ConsistentHash(t *testing.T) {
 	args := []arg{
 		// murmur3
-		{50, hash.Hash, "murmur3.Sum64"},
+		//{50, hash.Hash, "murmur3.Sum64"},
 		{100, hash.Hash, "murmur3.Sum64"},
-		{200, hash.Hash, "murmur3.Sum64"},
-		{500, hash.Hash, "murmur3.Sum64"},
-		{1000, hash.Hash, "murmur3.Sum64"},
-		{2000, hash.Hash, "murmur3.Sum64"},
+		//{200, hash.Hash, "murmur3.Sum64"},
+		//{500, hash.Hash, "murmur3.Sum64"},
+		//{1000, hash.Hash, "murmur3.Sum64"},
+		//{2000, hash.Hash, "murmur3.Sum64"},
+
 		// xxhash
-		{50, xxHashFunc, "xxhash.Sum64"},
+		//{50, xxHashFunc, "xxhash.Sum64"},
 		{100, xxHashFunc, "xxhash.Sum64"},
-		{200, xxHashFunc, "xxhash.Sum64"},
-		{500, xxHashFunc, "xxhash.Sum64"},
-		{1000, xxHashFunc, "xxhash.Sum64"},
-		{2000, xxHashFunc, "xxhash.Sum64"},
+		//{200, xxHashFunc, "xxhash.Sum64"},
+		//{500, xxHashFunc, "xxhash.Sum64"},
+		//{1000, xxHashFunc, "xxhash.Sum64"},
+		//{2000, xxHashFunc, "xxhash.Sum64"},
+
 		// xxhash3
-		{50, xxHash3Func, "xxhash3.Hash64"},
+		//{50, xxHash3Func, "xxhash3.Hash64"},
 		{100, xxHash3Func, "xxhash3.Hash64"},
-		{200, xxHash3Func, "xxhash3.Hash64"},
-		{500, xxHash3Func, "xxhash3.Hash64"},
-		{1000, xxHash3Func, "xxhash3.Hash64"},
-		{2000, xxHash3Func, "xxhash3.Hash64"},
+		//{200, xxHash3Func, "xxhash3.Hash64"},
+		//{500, xxHash3Func, "xxhash3.Hash64"},
+		//{1000, xxHash3Func, "xxhash3.Hash64"},
+		//{2000, xxHash3Func, "xxhash3.Hash64"},
+
 		// crc32 (trpcgo用的），
+		//{50, crc32HashFunc, "crc32.ChecksumIEEE"},
 		{100, crc32HashFunc, "crc32.ChecksumIEEE"},
-		{200, crc32HashFunc, "crc32.ChecksumIEEE"},
-		{500, crc32HashFunc, "crc32.ChecksumIEEE"},
-		{1000, crc32HashFunc, "crc32.ChecksumIEEE"},
-		{2000, crc32HashFunc, "crc32.ChecksumIEEE"},
+		//{200, crc32HashFunc, "crc32.ChecksumIEEE"},
+		//{500, crc32HashFunc, "crc32.ChecksumIEEE"},
+		//{1000, crc32HashFunc, "crc32.ChecksumIEEE"},
+		//{2000, crc32HashFunc, "crc32.ChecksumIEEE"},
 	}
 	for i := 0; i < len(args); i++ {
 		doTest(args[i])
@@ -173,10 +179,271 @@ func xxHash3Func(data []byte) uint64 {
 	return xxh3.Hash(data)
 }
 
-func metroHashFunc(data []byte) uint64 {
-	return 0
-}
-
 func crc32HashFunc(data []byte) uint64 {
 	return uint64(crc32.ChecksumIEEE(data))
+}
+
+func cityHashFunc(data []byte) uint64 {
+	return cityhash.CityHash64(data, uint32(len(data)))
+}
+
+type el struct {
+	minHash uint64
+	maxHash uint64
+	count   uint64
+}
+
+type els []el
+
+func (e els) Len() int {
+	return len(e)
+}
+
+func (e els) Less(i, j int) bool {
+	return e[i].minHash < e[i].maxHash
+}
+
+func (e els) Swap(i, j int) {
+	e[i], e[j] = e[j], e[i]
+}
+
+func (e els) Init() {
+	for i := range e {
+		e[i].minHash = uint64(i)
+		e[i].maxHash = uint64(i + 1)
+	}
+}
+
+func newEls(length int) els {
+	v := els(make([]el, length))
+	v.Init()
+	return v
+}
+
+var hashes [80 * 10000]uint64
+
+func init() {
+	for i := 0; i < len(hashes); i++ {
+		//hashes[i] = crc32HashFunc([]byte(strconv.Itoa(i)))
+		hashes[i] = cityHashFunc([]byte(strconv.Itoa(i)))
+		//hashes[i] = cityHashFunc(generateRandomBytes(18))
+	}
+}
+
+func generateRandomBytes(n int) []byte {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+// max: 119 min: 50 sdev: 8.835655040799182 peak/mean: 1.4875
+//
+// 对hash值hash，max: 122 min: 48 sdev: 8.952306965246445 peak/mean: 1.525
+// 直接用hash值, max: 114 min: 51 sdev: 8.658637306181614 peak/mean: 1.425
+//
+// 对cityhash值再hash：max: 123 min: 47 sdev: 8.982126696946553 peak/mean: 1.5375
+func Test_XXH3_数值转字符串再hash_均匀性(t *testing.T) {
+
+	eee := newEls(10000)
+
+	for i := 0; i < 80*10000; i++ {
+		//v := xxh3.HashString(strconv.Itoa(i)) % uint64(len(eee))
+		v := xxh3.HashString(strconv.Itoa(int(hashes[i]))) % uint64(len(eee))
+		eee[v].count++
+	}
+
+	v := eee.toFloat64()
+	max, _ := stat.Max(v)
+	min, _ := stat.Min(v)
+	avg, _ := stat.Mean(v)
+	sdev, _ := stat.StdDevP(v)
+	peakToMean := max / avg
+
+	fmt.Println("max:", max, "min:", min, "sdev:", sdev, "peak/mean:", peakToMean)
+	fmt.Println("------------------")
+	//eee.prettyprint()
+}
+
+//max: 117 min: 51 sdev: 8.978340603920081 peak/mean: 1.4625
+//
+//max: 118 min: 50 sdev: 9.029075257189962 peak/mean: 1.475
+// 对cityhash值再hash：max: 113 min: 49 sdev: 9.043926138574994 peak/mean: 1.4125
+func Test_XXH3_数值二次hash_均匀性_v2(t *testing.T) {
+	eee := newEls(10000)
+
+	for i := 0; i < 80*10000; i++ {
+		//v := xxh3_v2(uint64(i)) % uint64(len(eee))
+		v := xxh3_v2(hashes[i]) % uint64(len(eee))
+		eee[v].count++
+	}
+
+	v := eee.toFloat64()
+	max, _ := stat.Max(v)
+	min, _ := stat.Min(v)
+	avg, _ := stat.Mean(v)
+	sdev, _ := stat.StdDevP(v)
+	peakToMean := max / avg
+
+	fmt.Println("max:", max, "min:", min, "sdev:", sdev, "peak/mean:", peakToMean)
+	fmt.Println("------------------")
+	//eee.prettyprint()
+}
+
+// xxh3 		Benchmark_xxh3_1-10    	57173592	        19.69 ns/op
+//
+// murmur		... 35.28 ns/op
+// crc32		... 32.29 ns/op
+//
+// Benchmark_xxh3_数值转字符串后再hash-10                    	41993408	        28.32 ns/op
+// 对cityhash值再hash：Benchmark_xxh3_数值转字符串后再hash-10                    	29426978	        39.02 ns/op
+func Benchmark_xxh3_数值转字符串后再hash(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		//xxh3.Hash([]byte(strconv.Itoa(i)))
+		j := i % len(hashes)
+		xxh3.Hash([]byte(strconv.Itoa(int(hashes[j]))))
+	}
+}
+
+//func Benchmark_murmur3hash(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		hash.Hash([]byte(strconv.Itoa(i)))
+//	}
+//}
+
+// Benchmark_crc32hash-10    	36708412	        32.29 ns/op
+//func Benchmark_crc32hash(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		crc32HashFunc([]byte(strconv.Itoa(i)))
+//	}
+//}
+
+// Benchmark_cityhash-10    	46138761	        22.44 ns/op
+//func Benchmark_cityhash(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		cityHashFunc([]byte(strconv.Itoa(i)))
+//	}
+//}
+
+//Benchmark_xxh3_trick-10    	187119049	         6.324 ns/op
+//
+// Benchmark_xxh3_数值二次hash_v2-10            	179257455	         6.612 ns/op
+// 对cityhash值再hash：         6.613 ns/op
+//                    循环展开  3.7ns
+func Benchmark_xxh3_数值二次hash_v2(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		j := i % len(hashes)
+		//xxh3_v2(uint64(i))
+		xxh3_v22(hashes[j])
+	}
+}
+
+func Benchmark_xxh3_数值二次hash_v2_again(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		//xxh3_v2(uint64(i))
+		xxh3_v22(uint64(i))
+	}
+}
+
+func xxh3_v2(n uint64) uint64 {
+	var vv [8]byte
+	for i := 0; i < 8; i++ {
+		vv[i] = byte(n & 0xff)
+		n = n >> 8
+	}
+	return xxh3.Hash(vv[:])
+}
+
+func xxh3_v22(n uint64) uint64 {
+	var vv [8]byte
+	vv[0] = byte(n & 0xff)
+	vv[1] = byte((n >> 8) & 0xff)
+	vv[2] = byte((n >> 16) & 0xff)
+	vv[3] = byte((n >> 24) & 0xff)
+	vv[4] = byte((n >> 32) & 0xff)
+	vv[5] = byte((n >> 40) & 0xff)
+	vv[6] = byte((n >> 48) & 0xff)
+	vv[7] = byte((n >> 56) & 0xff)
+	return xxh3.Hash(vv[:])
+}
+
+func (e els) toFloat64() []float64 {
+	f := make([]float64, len(e))
+	for i, v := range e {
+		f[i] = float64(v.count)
+	}
+	return f
+}
+
+func (e els) prettyprint() {
+	for _, v := range e {
+		fmt.Println(v)
+	}
+}
+
+// crc32:
+// max: 10 min: 4 avg: 9.74122875
+// p10: 7 p20: 7 p30: 8 p50: 8 p99: 8 p999: 8
+//
+// cityhash:
+// max: 20 min: 13 avg: 19.3970125
+// p10: 17 p20: 17 p30: 17 p50: 17 p99: 18 p999: 18
+func Test_hashValue_length(t *testing.T) {
+	nnn := make([]float64, len(hashes))
+	for i := 0; i < len(nnn); i++ {
+		nnn[i] = float64(len(fmt.Sprintf("%d", hashes[i])))
+	}
+	max, _ := stat.Max(nnn)
+	min, _ := stat.Min(nnn)
+	avg, _ := stat.Mean(nnn)
+	fmt.Println("max:", max, "min:", min, "avg:", avg)
+
+	pp := []float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 0.999, 0.9999, 1.0}
+	ppv := make([]float64, len(pp))
+	for i := 0; i < len(pp); i++ {
+		v, _ := stat.Percentile(nnn, pp[i])
+		ppv[i] = v
+	}
+	for i := 0; i < len(pp); i++ {
+		fmt.Printf("p-%f: %v\n", pp[i], ppv[i])
+	}
+	fmt.Println()
+}
+
+func BenchmarkU8(b *testing.B) {
+	var bts [8]byte
+	var c uint64
+	for n := 0; n < b.N; n++ {
+		encodeU8(bts[:], c)
+		c++
+	}
+}
+
+func BenchmarkE8(b *testing.B) {
+	var bts [8]byte
+	var c uint64
+	for n := 0; n < b.N; n++ {
+		encodeE8(bts[:], c)
+		c++
+	}
+}
+
+func encodeU8(bts []byte, n uint64) {
+	for i := 0; i < 8; i++ {
+		bts[i] = byte(n & 0xff)
+		n = n >> 8
+	}
+}
+
+func encodeE8(bts []byte, n uint64) {
+	bts[0] = byte(n & 0xff)
+	bts[1] = byte((n >> 8) & 0xff)
+	bts[2] = byte((n >> 16) & 0xff)
+	bts[3] = byte((n >> 24) & 0xff)
+	bts[4] = byte((n >> 32) & 0xff)
+	bts[5] = byte((n >> 40) & 0xff)
+	bts[6] = byte((n >> 48) & 0xff)
+	bts[7] = byte((n >> 56) & 0xff)
 }

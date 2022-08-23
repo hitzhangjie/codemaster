@@ -32,6 +32,7 @@ require (
 	go.uber.org/zap v1.21.0
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670
 	golang.org/x/net v0.0.0-20220531201128-c960675eff93
+	gonum.org/v1/plot v0.11.0
 	google.golang.org/grpc/examples v0.0.0-20211119181224-d542bfcee46d
 	google.golang.org/protobuf v1.28.0
 )

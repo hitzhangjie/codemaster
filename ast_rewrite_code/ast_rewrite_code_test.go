@@ -1,6 +1,7 @@
 package ast_rewrite_code
 
 import (
+	"go/ast"
 	"go/parser"
 	"go/printer"
 	"go/token"
@@ -24,6 +25,10 @@ import (
 	"fmt"
 )
 
+func add(a, b int) int {
+	return a + b
+}
+
 func main() {
 	fmt.Println("hello world")
 }`
@@ -43,6 +48,27 @@ func TestASTRewriteCode(t *testing.T) {
 	f.Doc = nil
 
 	//ast.Print(fset, f)
+
+	for _, f := range f.Decls {
+		fn, ok := f.(*ast.FuncDecl)
+		if !ok {
+			continue
+		}
+
+		println(fn.Name.Name)
+
+		if fn.Name.String() != "add" {
+			continue
+		}
+		fn.Doc = &ast.CommentGroup{
+			List: []*ast.Comment{
+				{
+					Slash: 0,
+					Text:  "// " + fn.Name.String() + " do something ...\n",
+				},
+			},
+		}
+	}
 
 	printer.Fprint(os.Stdout, fset, f)
 }

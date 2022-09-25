@@ -1,0 +1,5 @@
+# README
+
+这个demo是伪装自身为mysql slave，从master去同步binlog的，然后对binlog中记录的事件进行解析。
+
+这个操作还是用的比较多的，经常同步mysql中的更新操作，来异步更新到elasticsearch来支持丰富的查询场景。

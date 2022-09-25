@@ -6,8 +6,8 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-	person "github.com/hitzhangjie/codemaster/codec/testcase"
-	person2 "github.com/hitzhangjie/codemaster/codec/testcase2"
+	person "github.com/hitzhangjie/codemaster/jsonpb/testcase"
+	person2 "github.com/hitzhangjie/codemaster/jsonpb/testcase2"
 	"github.com/stretchr/testify/assert"
 )
 

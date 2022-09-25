@@ -15,11 +15,12 @@ func (e *myerr) Error() string {
 
 func Test_XXXX(t *testing.T) {
 	err := get()
+	// 动态类型不为nil，err就不为nil（甭管动态值是否为nil）
 	if err != nil {
-		panic(err)
+		assert.IsType(t, err, &myerr{})
 	}
+	// 注意，动态值确实为nil
 	assert.Nil(t, err)
-	assert.IsType(t, err, &myerr{})
 }
 
 func get() error {

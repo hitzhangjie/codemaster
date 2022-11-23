@@ -23,9 +23,9 @@ import (
 var (
 	address  = "localhost:50051"
 	hostname = "localhost"
-	crtFile  = filepath.Join("../conf/client.crt")
-	keyFile  = filepath.Join("../conf/client.key")
-	caFile   = filepath.Join("../conf/ca.crt")
+	crtFile  = filepath.Join("../certs/client.crt")
+	keyFile  = filepath.Join("../certs/client.key")
+	caFile   = filepath.Join("../certs/ca.crt")
 )
 
 func main() {

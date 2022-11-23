@@ -44,9 +44,9 @@ func (s *server) mustEmbedUnimplementedHelloServiceServer() {
 
 var (
 	port    = ":50051"
-	crtFile = filepath.Join("../conf/server.crt")
-	keyFile = filepath.Join("../conf/server.key")
-	caFile  = filepath.Join("../conf/ca.crt")
+	crtFile = filepath.Join("../certs/server.crt")
+	keyFile = filepath.Join("../certs/server.key")
+	caFile  = filepath.Join("../certs/ca.crt")
 )
 
 func main() {

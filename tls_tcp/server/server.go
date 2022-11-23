@@ -4,16 +4,36 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"io/ioutil"
 	"log"
 	"net"
 )
 
 func main() {
-	cert, err := tls.LoadX509KeyPair("../certs/server.pem", "../certs/server.key")
+	// server CA
+	certPool := x509.NewCertPool()
+	ca, err := ioutil.ReadFile("../certs/ca.crt")
+	if err != nil {
+		log.Fatalf("could not read ca certificate: %s", err)
+	}
+
+	if ok := certPool.AppendCertsFromPEM(ca); !ok {
+		log.Fatalf("failed to append ca certificate")
+	}
+
+	// server certificate
+	cert, err := tls.LoadX509KeyPair("../certs/server.crt", "../certs/server.key")
 	if err != nil {
 		log.Fatalf("server: loadkeys: %s", err)
 	}
-	config := tls.Config{Certificates: []tls.Certificate{cert}}
+
+	// listen serve
+	config := tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		//RootCAs:      certPool, // 如果服务端也会充当client请求其他人的话，要校验别人也要设置RootCAs
+		ClientCAs: certPool, // 服务端校验客户端证书需设置ClientCAs
+	}
 	config.Rand = rand.Reader
 	service := "0.0.0.0:8000"
 	listener, err := tls.Listen("tcp", service, &config)

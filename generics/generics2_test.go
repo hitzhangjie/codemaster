@@ -1,8 +1,9 @@
 package generics
 
 import (
-	"encoding/json"
+	"fmt"
 	"testing"
+	"unsafe"
 
 	"google.golang.org/protobuf/proto"
 
@@ -17,9 +18,10 @@ func Test_doSomething(t *testing.T) {
 		Msg:  "xxxx",
 	}
 
-	dat, _ = json.Marshal(&req)
+	dat, _ = proto.Marshal(&req)
 
-	doSomething(&req)
+	doSomething[hello.HelloReq](&req)
+
 }
 
 func doSomething[T any, E interface {
@@ -27,5 +29,7 @@ func doSomething[T any, E interface {
 	*T
 }](val E) {
 	var value T
-	json.Unmarshal(dat, &value)
+	v := (E)(unsafe.Pointer(&value))
+	_ = proto.Unmarshal(dat, v)
+	fmt.Println(v)
 }

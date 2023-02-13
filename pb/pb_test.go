@@ -36,3 +36,19 @@ func Test_JSONPB_Marshal_DefaultValue(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "{\"code\":0,\"msg\":\"\"}", s)
 }
+
+func Test_ProtoMarshalUnMarshal_DifferentMessage_WithSameStructure(t *testing.T) {
+	r1 := hello.HelloReq{
+		Code: 100,
+		Msg:  "hello",
+	}
+	b, err := proto.Marshal(&r1)
+	assert.Nil(t, err)
+
+	r2 := hello.HelloReqX{}
+	err = proto.Unmarshal(b, &r2)
+	assert.Nil(t, err)
+
+	assert.Equal(t, r1.Code, r2.Code)
+	assert.Equal(t, r1.Msg, r2.Msg)
+}

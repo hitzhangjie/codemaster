@@ -1,7 +1,6 @@
 package lockfree_test
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -100,12 +99,9 @@ func (c *chanQueue) Enqueue(i interface{}) {
 }
 
 func (c *chanQueue) Dequeue() interface{} {
-	ctx, _ := context.WithTimeout(context.Background(), time.Millisecond*100)
 	select {
 	case v := <-c.ch:
 		return v
-	case <-ctx.Done():
-		return nil
 	default:
 		return nil
 	}
@@ -191,6 +187,12 @@ func BenchmarkChanQueue(b *testing.B) {
 		inputs = append(inputs, rand.Int()%2)
 	}
 	q := newChanQueue(1024)
+	go func() {
+		for {
+			q.Dequeue()
+			time.Sleep(time.Microsecond * 10)
+		}
+	}()
 
 	var c int64
 	b.ResetTimer()

@@ -4,60 +4,68 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
-	"time"
 
 	"github.com/hitzhangjie/codemaster/slidingwindow_lockfree/internal/lockfree"
 )
 
+const maxTimes = 5
+
 func BenchmarkLockFreeQueue_1Consumer(b *testing.B) {
 	gomaxprocs := runtime.GOMAXPROCS(0)
 
-	for p := 1; p < 1024; p++ {
-		parrallelism := p * gomaxprocs
-		desc := fmt.Sprintf("parrallelism-%d", parrallelism)
+	for p := 1; p < maxTimes; p++ {
+		desc := fmt.Sprintf("parrallelism-%d", p*gomaxprocs)
 		b.Run(desc, func(b *testing.B) {
 			q := lockfree.NewQueue()
+			done := make(chan int, 1)
 			go func() {
 				for {
 					q.Dequeue()
-					time.Sleep(time.Millisecond * 10)
+					select {
+					case <-done:
+						return
+					default:
+					}
 				}
 			}()
-
 			b.ResetTimer()
-			b.SetParallelism(parrallelism)
+			b.SetParallelism(p)
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
 					q.Enqueue(1)
 				}
 			})
+			close(done)
 		})
 	}
-
 }
 
 func BenchmarkMutexSliceQueue_1Consumer(b *testing.B) {
 	gomaxprocs := runtime.GOMAXPROCS(0)
 
-	for p := 1; p < 1024; p++ {
-		parrallelism := p * gomaxprocs
-		desc := fmt.Sprintf("parrallelism-%d", parrallelism)
+	for p := 1; p < maxTimes; p++ {
+		desc := fmt.Sprintf("parrallelism-%d", p*gomaxprocs)
 		b.Run(desc, func(b *testing.B) {
 			q := newMutexQueue()
+			done := make(chan int, 1)
 			go func() {
 				for {
 					q.Dequeue()
-					time.Sleep(time.Millisecond * 10)
+					select {
+					case <-done:
+						return
+					default:
+					}
 				}
 			}()
-
 			b.ResetTimer()
-			b.SetParallelism(parrallelism)
+			b.SetParallelism(p)
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
 					q.Enqueue(1)
 				}
 			})
+			close(done)
 		})
 	}
 }
@@ -65,25 +73,29 @@ func BenchmarkMutexSliceQueue_1Consumer(b *testing.B) {
 func BenchmarkChanQueue_1Consumer(b *testing.B) {
 	gomaxprocs := runtime.GOMAXPROCS(0)
 
-	for p := 1; p < 1024; p++ {
-		parrallelism := gomaxprocs * p
-		desc := fmt.Sprintf("parrallelism-%d", parrallelism)
+	for p := 1; p < maxTimes; p++ {
+		desc := fmt.Sprintf("parrallelism-%d", p*gomaxprocs)
 		b.Run(desc, func(b *testing.B) {
-			q := newChanQueue(1024)
+			q := newChanQueue(512)
+			done := make(chan int, 1)
 			go func() {
 				for {
 					q.Dequeue()
-					time.Sleep(time.Millisecond * 10)
+					select {
+					case <-done:
+						return
+					default:
+					}
 				}
 			}()
-
 			b.ResetTimer()
-			b.SetParallelism(parrallelism)
+			b.SetParallelism(p)
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
 					q.Enqueue(1)
 				}
 			})
+			close(done)
 		})
 	}
 }

@@ -89,9 +89,9 @@ type chanQueue struct {
 	ch chan interface{}
 }
 
-func newChanQueue() *chanQueue {
+func newChanQueue(size int) *chanQueue {
 	return &chanQueue{
-		ch: make(chan interface{}, 1024),
+		ch: make(chan interface{}, size),
 	}
 }
 
@@ -111,15 +111,15 @@ func (c *chanQueue) Dequeue() interface{} {
 	}
 }
 
-//go test -bench=BenchmarkLockFreeQueue -count=5
-//goos: darwin
-//goarch: amd64
-//cpu: Intel(R) Core(TM) i7-8569U CPU @ 2.80GHz
-//BenchmarkLockFreeQueue-8        64692733                18.32 ns/op
-//BenchmarkLockFreeQueue-8        64811620                18.19 ns/op
-//BenchmarkLockFreeQueue-8        64799133                18.11 ns/op
-//BenchmarkLockFreeQueue-8        62302936                18.33 ns/op
-//BenchmarkLockFreeQueue-8        63553734                18.20 ns/op
+// go test -bench=BenchmarkLockFreeQueue -count=5
+// goos: darwin
+// goarch: amd64
+// cpu: Intel(R) Core(TM) i7-8569U CPU @ 2.80GHz
+// BenchmarkLockFreeQueue-8        64692733                18.32 ns/op
+// BenchmarkLockFreeQueue-8        64811620                18.19 ns/op
+// BenchmarkLockFreeQueue-8        64799133                18.11 ns/op
+// BenchmarkLockFreeQueue-8        62302936                18.33 ns/op
+// BenchmarkLockFreeQueue-8        63553734                18.20 ns/op
 func BenchmarkLockFreeQueue(b *testing.B) {
 	length := 1 << 12
 	inputs := make([]int, length)
@@ -143,15 +143,15 @@ func BenchmarkLockFreeQueue(b *testing.B) {
 	})
 }
 
-//go test -bench=BenchmarkMutexSliceQueue -count=5
-//goos: darwin
-//goarch: amd64
-//cpu: Intel(R) Core(TM) i7-8569U CPU @ 2.80GHz
-//BenchmarkMutexSliceQueue-8      14319187                84.40 ns/op
-//BenchmarkMutexSliceQueue-8      14222097                86.08 ns/op
-//BenchmarkMutexSliceQueue-8      14041225                84.13 ns/op
-//BenchmarkMutexSliceQueue-8      14324254                86.18 ns/op
-//BenchmarkMutexSliceQueue-8      13946214                86.98 ns/op
+// go test -bench=BenchmarkMutexSliceQueue -count=5
+// goos: darwin
+// goarch: amd64
+// cpu: Intel(R) Core(TM) i7-8569U CPU @ 2.80GHz
+// BenchmarkMutexSliceQueue-8      14319187                84.40 ns/op
+// BenchmarkMutexSliceQueue-8      14222097                86.08 ns/op
+// BenchmarkMutexSliceQueue-8      14041225                84.13 ns/op
+// BenchmarkMutexSliceQueue-8      14324254                86.18 ns/op
+// BenchmarkMutexSliceQueue-8      13946214                86.98 ns/op
 func BenchmarkMutexSliceQueue(b *testing.B) {
 	length := 1 << 12
 	inputs := make([]int, length)
@@ -175,22 +175,22 @@ func BenchmarkMutexSliceQueue(b *testing.B) {
 	})
 }
 
-//go test -bench=BenchmarkChanQueue -count=5
-//goos: darwin
-//goarch: amd64
-//cpu: Intel(R) Core(TM) i7-8569U CPU @ 2.80GHz
-//BenchmarkChanQueue-8     3246128               373.2 ns/op
-//BenchmarkChanQueue-8     3177400               462.6 ns/op
-//BenchmarkChanQueue-8     2407434               448.4 ns/op
-//BenchmarkChanQueue-8     2662528               456.8 ns/op
-//BenchmarkChanQueue-8     2361782               451.4 ns/op
+// go test -bench=BenchmarkChanQueue -count=5
+// goos: darwin
+// goarch: amd64
+// cpu: Intel(R) Core(TM) i7-8569U CPU @ 2.80GHz
+// BenchmarkChanQueue-8     3246128               373.2 ns/op
+// BenchmarkChanQueue-8     3177400               462.6 ns/op
+// BenchmarkChanQueue-8     2407434               448.4 ns/op
+// BenchmarkChanQueue-8     2662528               456.8 ns/op
+// BenchmarkChanQueue-8     2361782               451.4 ns/op
 func BenchmarkChanQueue(b *testing.B) {
 	length := 1 << 12
 	inputs := make([]int, length)
 	for i := 0; i < length; i++ {
 		inputs = append(inputs, rand.Int()%2)
 	}
-	q := newChanQueue()
+	q := newChanQueue(1024)
 
 	var c int64
 	b.ResetTimer()

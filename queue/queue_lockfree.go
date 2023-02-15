@@ -1,23 +1,23 @@
-package lockfree
+package queue
 
 import (
 	"sync/atomic"
 	"unsafe"
 )
 
-// Queue implements lock-free FIFO freelist based queue.
+// LockFreeQueue implements lock-free FIFO freelist based queue.
 // ref: https://dl.acm.org/citation.cfm?doid=248052.248106
-type Queue struct {
+type LockFreeQueue struct {
 	head unsafe.Pointer
 	tail unsafe.Pointer
 	len  uint64
 }
 
-// NewQueue creates a new lock-free queue.
-func NewQueue() *Queue {
+// NewLockfreeQueue creates a new lock-free queue.
+func NewLockfreeQueue() IQueue {
 	// allocate a free item
 	head := node{next: nil, v: nil}
-	return &Queue{
+	return &LockFreeQueue{
 		// both head and tail points to the free item
 		tail: unsafe.Pointer(&head),
 		head: unsafe.Pointer(&head),
@@ -25,7 +25,7 @@ func NewQueue() *Queue {
 }
 
 // Enqueue puts the given value v at the tail of the queue.
-func (q *Queue) Enqueue(v interface{}) {
+func (q *LockFreeQueue) Enqueue(v interface{}) {
 	// allocate new item
 	i := &node{next: nil, v: v}
 	var last, lastnext *node
@@ -53,7 +53,7 @@ func (q *Queue) Enqueue(v interface{}) {
 
 // Dequeue removes and returns the value at the head of the queue.
 // It returns nil if the queue is empty.
-func (q *Queue) Dequeue() interface{} {
+func (q *LockFreeQueue) Dequeue() interface{} {
 	var first, last, firstnext *node
 	for {
 		first = load(&q.head)
@@ -87,6 +87,19 @@ func (q *Queue) Dequeue() interface{} {
 }
 
 // Length returns the length of the queue.
-func (q *Queue) Length() uint64 {
+func (q *LockFreeQueue) Length() uint64 {
 	return atomic.LoadUint64(&q.len)
+}
+
+type node struct {
+	next unsafe.Pointer
+	v    interface{}
+}
+
+func load(p *unsafe.Pointer) *node {
+	return (*node)(atomic.LoadPointer(p))
+}
+
+func cas(p *unsafe.Pointer, old, new *node) bool {
+	return atomic.CompareAndSwapPointer(p, unsafe.Pointer(old), unsafe.Pointer(new))
 }

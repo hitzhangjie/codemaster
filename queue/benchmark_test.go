@@ -1,111 +1,19 @@
-package lockfree_test
+package queue_test
 
 import (
-	"fmt"
 	"math/rand"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/hitzhangjie/codemaster/slidingwindow_lockfree/internal/lockfree"
+	"github.com/hitzhangjie/codemaster/queue"
 )
 
-func TestQueueDequeueEmpty(t *testing.T) {
-	q := lockfree.NewQueue()
-	if q.Dequeue() != nil {
-		t.Fatalf("dequeue empty queue returns non-nil")
-	}
-}
-
-func TestQueue_Length(t *testing.T) {
-	q := lockfree.NewQueue()
-	if q.Length() != 0 {
-		t.Fatalf("empty queue has non-zero length")
-	}
-
-	q.Enqueue(1)
-	if q.Length() != 1 {
-		t.Fatalf("count of enqueue wrong, want %d, got %d.", 1, q.Length())
-	}
-
-	q.Dequeue()
-	if q.Length() != 0 {
-		t.Fatalf("count of dequeue wrong, want %d, got %d", 0, q.Length())
-	}
-}
-
-func ExampleQueue() {
-	q := lockfree.NewQueue()
-
-	q.Enqueue("1st item")
-	q.Enqueue("2nd item")
-	q.Enqueue("3rd item")
-
-	fmt.Println(q.Dequeue())
-	fmt.Println(q.Dequeue())
-	fmt.Println(q.Dequeue())
-
-	// Output:
-	// 1st item
-	// 2nd item
-	// 3rd item
-}
-
-type queueInterface interface {
-	Enqueue(interface{})
-	Dequeue() interface{}
-}
-
-type mutexQueue struct {
-	v  []interface{}
-	mu sync.Mutex
-}
-
-func newMutexQueue() *mutexQueue {
-	return &mutexQueue{v: make([]interface{}, 0)}
-}
-
-func (q *mutexQueue) Enqueue(v interface{}) {
-	q.mu.Lock()
-	q.v = append(q.v, v)
-	q.mu.Unlock()
-}
-
-func (q *mutexQueue) Dequeue() interface{} {
-	q.mu.Lock()
-	if len(q.v) == 0 {
-		q.mu.Unlock()
-		return nil
-	}
-	v := q.v[0]
-	q.v = q.v[1:]
-	q.mu.Unlock()
-	return v
-}
-
-type chanQueue struct {
-	ch chan interface{}
-}
-
-func newChanQueue(size int) *chanQueue {
-	return &chanQueue{
-		ch: make(chan interface{}, size),
-	}
-}
-
-func (c *chanQueue) Enqueue(i interface{}) {
-	c.ch <- i
-}
-
-func (c *chanQueue) Dequeue() interface{} {
-	select {
-	case v := <-c.ch:
-		return v
-	default:
-		return nil
-	}
-}
+///////////////////////////////////////////////////////////////////////////////
+// benchmark lockfree / mutex+slice / chan queue
+// 压测配置统一：
+// - 协程数固定GOMAXPROCS
+// - queue操作逻辑，测试时先写后读
 
 // go test -bench=BenchmarkLockFreeQueue -count=5
 // goos: darwin
@@ -116,13 +24,22 @@ func (c *chanQueue) Dequeue() interface{} {
 // BenchmarkLockFreeQueue-8        64799133                18.11 ns/op
 // BenchmarkLockFreeQueue-8        62302936                18.33 ns/op
 // BenchmarkLockFreeQueue-8        63553734                18.20 ns/op
+
+// go test -bench=BenchmarkLockFreeQueue -count=5
+// goos: darwin
+// goarch: arm64
+// BenchmarkLockFreeQueue-10               16280550                68.99 ns/op
+// BenchmarkLockFreeQueue-10               18681440                72.15 ns/op
+// BenchmarkLockFreeQueue-10               17397050                71.82 ns/op
+// BenchmarkLockFreeQueue-10               23805744                73.15 ns/op
+// BenchmarkLockFreeQueue-10               16105462                76.17 ns/op
 func BenchmarkLockFreeQueue(b *testing.B) {
 	length := 1 << 12
 	inputs := make([]int, length)
 	for i := 0; i < length; i++ {
 		inputs = append(inputs, rand.Int()%2)
 	}
-	q := lockfree.NewQueue()
+	q := queue.NewLockfreeQueue()
 
 	var c int64
 	b.ResetTimer()
@@ -148,13 +65,22 @@ func BenchmarkLockFreeQueue(b *testing.B) {
 // BenchmarkMutexSliceQueue-8      14041225                84.13 ns/op
 // BenchmarkMutexSliceQueue-8      14324254                86.18 ns/op
 // BenchmarkMutexSliceQueue-8      13946214                86.98 ns/op
+
+// go test -bench=BenchmarkMutexSliceQueue -count=5
+// goos: darwin
+// goarch: arm64
+// BenchmarkMutexSliceQueue-10                      8839629               137.5 ns/op
+// BenchmarkMutexSliceQueue-10                      8811577               123.6 ns/op
+// BenchmarkMutexSliceQueue-10                     10479646               126.7 ns/op
+// BenchmarkMutexSliceQueue-10                     10064587               119.0 ns/op
+// BenchmarkMutexSliceQueue-10                      9314046               117.4 ns/op
 func BenchmarkMutexSliceQueue(b *testing.B) {
 	length := 1 << 12
 	inputs := make([]int, length)
 	for i := 0; i < length; i++ {
 		inputs = append(inputs, rand.Int()%2)
 	}
-	q := newMutexQueue()
+	q := queue.NewMutexSliceQueue()
 
 	var c int64
 	b.ResetTimer()
@@ -180,13 +106,22 @@ func BenchmarkMutexSliceQueue(b *testing.B) {
 // BenchmarkChanQueue-8     2407434               448.4 ns/op
 // BenchmarkChanQueue-8     2662528               456.8 ns/op
 // BenchmarkChanQueue-8     2361782               451.4 ns/op
+
+// go test -bench=BenchmarkChanQueue -count=5
+// goos: darwin
+// goarch: arm64
+// BenchmarkChanQueue-10                   17382958                71.89 ns/op
+// BenchmarkChanQueue-10                   17791318                75.35 ns/op
+// BenchmarkChanQueue-10                   18194452                74.87 ns/op
+// BenchmarkChanQueue-10                   19312411                74.94 ns/op
+// BenchmarkChanQueue-10                   19402941                75.26 ns/op
 func BenchmarkChanQueue(b *testing.B) {
 	length := 1 << 12
 	inputs := make([]int, length)
 	for i := 0; i < length; i++ {
 		inputs = append(inputs, rand.Int()%2)
 	}
-	q := newChanQueue(1024)
+	q := queue.NewChanQueue(1024)
 	go func() {
 		for {
 			q.Dequeue()

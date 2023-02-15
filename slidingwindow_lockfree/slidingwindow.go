@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/hitzhangjie/codemaster/slidingwindow_lockfree/internal/lockfree"
+	lockfree "github.com/hitzhangjie/codemaster/queue"
 )
 
 // SlidingWindow sliding window consists two windows `curr` and `prev`,
@@ -18,7 +18,7 @@ type SlidingWindow struct {
 	curr *window
 	prev *window
 
-	q *lockfree.Queue
+	q *lockfree.LockFreeQueue
 }
 
 // NewSlidingWindow creates a new slidingwindow
@@ -39,7 +39,7 @@ func NewSlidingWindow(size time.Duration) *SlidingWindow {
 		last:  time.Now(),
 		curr:  currWin,
 		prev:  prevWin,
-		q:     lockfree.NewQueue(),
+		q:     lockfree.NewLockfreeQueue(),
 	}
 	go sw.start()
 

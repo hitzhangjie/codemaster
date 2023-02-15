@@ -3,10 +3,12 @@ package queue_test
 import (
 	"fmt"
 	"runtime"
+	"sync/atomic"
 	"testing"
 
 	lockfree3rd "github.com/bruceshao/lockfree/lockfree"
 	"github.com/hitzhangjie/codemaster/queue"
+	disruptor "github.com/smartystreets-prototypes/go-disruptor"
 )
 
 // macbook 14, m1 pro, darwin+arm64
@@ -148,4 +150,53 @@ type longEventHandler[T uint64] struct {
 
 func (h *longEventHandler[T]) OnEvent(v uint64) {
 	//fmt.Printf("value = %v\n", v)
+}
+
+// LMAX Disruptor porting to golang：go-disruptor
+//
+// 这个实现的速度就很快，比上面这个(https://github.com/bruceshao/lockfree)速度还要快很多
+// reading more: https://lmax-exchange.github.io/disruptor/
+const buffersize = 1024 * 1024
+
+var buffermask = buffersize - 1
+var sequence int64 = 0
+var ringbuffer = [buffersize]int{}
+
+func BenchmarkLockFreeQueue_godisruptor(b *testing.B) {
+	gomaxprocs := runtime.GOMAXPROCS(0)
+
+	for p := 1; p < maxTimes; p++ {
+		desc := fmt.Sprintf("parrallelism-%d", p*gomaxprocs)
+		b.Run(desc, func(b *testing.B) {
+
+			d := disruptor.New(
+				disruptor.WithCapacity(int64(buffersize)),
+				disruptor.WithConsumerGroup(MyConsumer{}))
+
+			go d.Read()
+
+			b.ResetTimer()
+			b.SetParallelism(p)
+			b.RunParallel(func(pb *testing.PB) {
+				for pb.Next() {
+					reservation := d.Reserve(1)
+					ringbuffer[int(sequence)&buffermask] = 1
+					atomic.AddInt64(&sequence, 1)
+					d.Commit(reservation, reservation)
+				}
+			})
+			d.Close()
+		})
+	}
+}
+
+type MyConsumer struct{}
+
+func (m MyConsumer) Consume(lowerSequence, upperSequence int64) {
+	for sequence := lowerSequence; sequence <= upperSequence; sequence++ {
+		index := sequence & int64(buffermask)
+		message := ringbuffer[index]
+		_ = message
+		//fmt.Println(message)
+	}
 }

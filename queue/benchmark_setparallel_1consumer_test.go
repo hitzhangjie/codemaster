@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"testing"
 
+	lockfree3rd "github.com/bruceshao/lockfree/lockfree"
 	"github.com/hitzhangjie/codemaster/queue"
 )
 
@@ -106,4 +107,39 @@ func BenchmarkChanQueue_1Consumer(b *testing.B) {
 			close(done)
 		})
 	}
+}
+
+// 这个实现号称快的多：https://github.com/bruceshao/lockfree
+//
+// 实测效果确实不错，耗时稳定在100ns上下。
+func BenchmarkLockFreeQueue_3rdparty(b *testing.B) {
+	gomaxprocs := runtime.GOMAXPROCS(0)
+
+	for p := 1; p < maxTimes; p++ {
+		desc := fmt.Sprintf("parrallelism-%d", p*gomaxprocs)
+		b.Run(desc, func(b *testing.B) {
+			h := &longEventHandler[uint64]{}
+			q := lockfree3rd.NewSerialDisruptor[uint64](1024*1024, h, &lockfree3rd.SchedWaitStrategy{})
+			if err := q.Start(); err != nil {
+				panic(err)
+			}
+			defer q.Close()
+			producer := q.Producer()
+
+			b.ResetTimer()
+			b.SetParallelism(p)
+			b.RunParallel(func(pb *testing.PB) {
+				for pb.Next() {
+					_ = producer.Write(1)
+				}
+			})
+		})
+	}
+}
+
+type longEventHandler[T uint64] struct {
+}
+
+func (h *longEventHandler[T]) OnEvent(v uint64) {
+	//fmt.Printf("value = %v\n", v)
 }

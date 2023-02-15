@@ -2,34 +2,35 @@ package queue
 
 import "sync"
 
-type MutexSliceQueue struct {
-	v  []interface{}
+type MutexSliceQueue[T any] struct {
+	v  []T
 	mu sync.Mutex
 }
 
-func NewMutexSliceQueue() IQueue {
-	return &MutexSliceQueue{v: make([]interface{}, 0)}
+func NewMutexSliceQueue[T any]() IQueue[T] {
+	return &MutexSliceQueue[T]{v: make([]T, 0)}
 }
 
-func (q *MutexSliceQueue) Enqueue(v interface{}) {
+func (q *MutexSliceQueue[T]) Enqueue(v T) {
 	q.mu.Lock()
 	q.v = append(q.v, v)
 	q.mu.Unlock()
 }
 
-func (q *MutexSliceQueue) Dequeue() interface{} {
+func (q *MutexSliceQueue[T]) Dequeue() (value T, ok bool) {
 	q.mu.Lock()
 	if len(q.v) == 0 {
 		q.mu.Unlock()
-		return nil
+		ok = false
+		return
 	}
 	v := q.v[0]
 	q.v = q.v[1:]
 	q.mu.Unlock()
-	return v
+	return v, true
 }
 
-func (q *MutexSliceQueue) Length() uint64 {
+func (q *MutexSliceQueue[T]) Length() uint64 {
 	q.mu.Lock()
 	n := uint64(len(q.v))
 	q.mu.Unlock()

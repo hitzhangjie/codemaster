@@ -39,7 +39,7 @@ func BenchmarkLockFreeQueue(b *testing.B) {
 	for i := 0; i < length; i++ {
 		inputs = append(inputs, rand.Int()%2)
 	}
-	q := queue.NewLockfreeQueue()
+	q := queue.NewLockfreeQueue[int]()
 
 	var c int64
 	b.ResetTimer()
@@ -80,7 +80,7 @@ func BenchmarkMutexSliceQueue(b *testing.B) {
 	for i := 0; i < length; i++ {
 		inputs = append(inputs, rand.Int()%2)
 	}
-	q := queue.NewMutexSliceQueue()
+	q := queue.NewMutexSliceQueue[int]()
 
 	var c int64
 	b.ResetTimer()
@@ -121,7 +121,7 @@ func BenchmarkChanQueue(b *testing.B) {
 	for i := 0; i < length; i++ {
 		inputs = append(inputs, rand.Int()%2)
 	}
-	q := queue.NewChanQueue(1024)
+	q := queue.NewChanQueue[int](1024)
 	go func() {
 		for {
 			q.Dequeue()

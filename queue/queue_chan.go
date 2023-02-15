@@ -1,28 +1,29 @@
 package queue
 
-type ChanQueue struct {
-	ch chan interface{}
+type ChanQueue[T any] struct {
+	ch chan T
 }
 
-func NewChanQueue(size int) IQueue {
-	return &ChanQueue{
-		ch: make(chan interface{}, size),
+func NewChanQueue[T any](size int) IQueue[T] {
+	return &ChanQueue[T]{
+		ch: make(chan T, size),
 	}
 }
 
-func (c *ChanQueue) Enqueue(i interface{}) {
+func (c *ChanQueue[T]) Enqueue(i T) {
 	c.ch <- i
 }
 
-func (c *ChanQueue) Dequeue() interface{} {
+func (c *ChanQueue[T]) Dequeue() (value T, ok bool) {
 	select {
 	case v := <-c.ch:
-		return v
+		return v, true
 	default:
-		return nil
+		ok = false
+		return
 	}
 }
 
-func (c *ChanQueue) Length() uint64 {
+func (c *ChanQueue[T]) Length() uint64 {
 	return uint64(len(c.ch))
 }

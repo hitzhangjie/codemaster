@@ -1,7 +1,7 @@
 package queue
 
-type IQueue interface {
-	Enqueue(interface{})
-	Dequeue() interface{}
+type IQueue[T any] interface {
+	Enqueue(T)
+	Dequeue() (T, bool)
 	Length() uint64
 }

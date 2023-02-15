@@ -9,7 +9,7 @@ import (
 	"github.com/hitzhangjie/codemaster/queue"
 )
 
-const maxTimes = 100
+const maxTimes = 5
 
 // macbook 14, m1 pro, darwin+arm64
 // 协程数从10~1000，平均耗时156~173ns，随着竞争加剧平均耗时有所增加，但是也是10ns级别的
@@ -19,7 +19,7 @@ func BenchmarkLockFreeQueue_withParallel(b *testing.B) {
 	for p := 1; p < maxTimes; p++ {
 		desc := fmt.Sprintf("parrallelism-%d", p*gomaxprocs)
 		b.Run(desc, func(b *testing.B) {
-			q := queue.NewLockfreeQueue()
+			q := queue.NewLockfreeQueue[int]()
 			b.ResetTimer()
 			b.SetParallelism(p)
 			b.RunParallel(func(pb *testing.PB) {
@@ -43,7 +43,7 @@ func BenchmarkMutexSliceQueue_withParallel(b *testing.B) {
 	for p := 1; p < maxTimes; p++ {
 		desc := fmt.Sprintf("parrallelism-%d", p*gomaxprocs)
 		b.Run(desc, func(b *testing.B) {
-			q := queue.NewMutexSliceQueue()
+			q := queue.NewMutexSliceQueue[int]()
 			b.ResetTimer()
 			b.SetParallelism(p)
 			b.RunParallel(func(pb *testing.PB) {
@@ -70,7 +70,7 @@ func BenchmarkChanQueue_withParallel(b *testing.B) {
 	for p := 1; p < maxTimes; p++ {
 		desc := fmt.Sprintf("parrallelism-%d", p*gomaxprocs)
 		b.Run(desc, func(b *testing.B) {
-			q := queue.NewChanQueue(512)
+			q := queue.NewChanQueue[int](512)
 			done := make(chan int, 1)
 			go func() {
 				for {

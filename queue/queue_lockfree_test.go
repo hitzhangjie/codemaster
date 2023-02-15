@@ -8,14 +8,14 @@ import (
 )
 
 func TestQueueDequeueEmpty(t *testing.T) {
-	q := queue.NewLockfreeQueue()
-	if q.Dequeue() != nil {
-		t.Fatalf("dequeue empty queue returns non-nil")
+	q := queue.NewLockfreeQueue[int]()
+	if _, ok := q.Dequeue(); ok {
+		t.Fatalf("dequeue empty queue returns true")
 	}
 }
 
 func TestQueue_Length(t *testing.T) {
-	q := queue.NewLockfreeQueue()
+	q := queue.NewLockfreeQueue[int]()
 	if q.Length() != 0 {
 		t.Fatalf("empty queue has non-zero length")
 	}
@@ -32,7 +32,7 @@ func TestQueue_Length(t *testing.T) {
 }
 
 func ExampleQueue() {
-	q := queue.NewLockfreeQueue()
+	q := queue.NewLockfreeQueue[string]()
 
 	q.Enqueue("1st item")
 	q.Enqueue("2nd item")
@@ -41,9 +41,11 @@ func ExampleQueue() {
 	fmt.Println(q.Dequeue())
 	fmt.Println(q.Dequeue())
 	fmt.Println(q.Dequeue())
+	fmt.Println(q.Dequeue())
 
 	// Output:
-	// 1st item
-	// 2nd item
-	// 3rd item
+	// 1st item true
+	// 2nd item true
+	// 3rd item true
+	//  false
 }

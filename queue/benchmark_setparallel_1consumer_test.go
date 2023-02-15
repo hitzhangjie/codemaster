@@ -11,13 +11,19 @@ import (
 
 // macbook 14, m1 pro, darwin+arm64
 // 协程数从10~1000，平均耗时380~498ns，随着竞争加剧平均耗时有所增加
+//
+// 这个性能之所以比较差，可能原因主要在于：
+// - Yes 调度器方面：避免一直cas+spin，实时gosched，从400、500ns，直接干到200ns
+// - No  内存使用方面，enqueue对象每次分配对象，GC开销大停顿延迟1ms：syncpool优化不明显
+// - No  interface转换，改成泛型实现：但是效果不明显
 func BenchmarkLockFreeQueue_1Consumer(b *testing.B) {
+	//debug.SetGCPercent(-1)
 	gomaxprocs := runtime.GOMAXPROCS(0)
 
-	for p := 1; p < maxTimes; p++ {
+	for p := 1; p < 3; p++ {
 		desc := fmt.Sprintf("parrallelism-%d", p*gomaxprocs)
 		b.Run(desc, func(b *testing.B) {
-			q := queue.NewLockfreeQueue()
+			q := queue.NewLockfreeQueue[int]()
 			done := make(chan int, 1)
 			go func() {
 				for {
@@ -49,7 +55,7 @@ func BenchmarkMutexSliceQueue_1Consumer(b *testing.B) {
 	for p := 1; p < maxTimes; p++ {
 		desc := fmt.Sprintf("parrallelism-%d", p*gomaxprocs)
 		b.Run(desc, func(b *testing.B) {
-			q := queue.NewMutexSliceQueue()
+			q := queue.NewMutexSliceQueue[int]()
 			done := make(chan int, 1)
 			go func() {
 				for {
@@ -85,7 +91,7 @@ func BenchmarkChanQueue_1Consumer(b *testing.B) {
 	for p := 1; p < maxTimes; p++ {
 		desc := fmt.Sprintf("parrallelism-%d", p*gomaxprocs)
 		b.Run(desc, func(b *testing.B) {
-			q := queue.NewChanQueue(512)
+			q := queue.NewChanQueue[int](512)
 			done := make(chan int, 1)
 			go func() {
 				for {

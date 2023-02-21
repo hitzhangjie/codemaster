@@ -1,7 +1,6 @@
 package slidingwindow
 
 import (
-	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -18,7 +17,7 @@ type SlidingWindow struct {
 	curr *window
 	prev *window
 
-	q *lockfree.LockFreeQueue
+	q lockfree.IQueue[event]
 }
 
 // NewSlidingWindow creates a new slidingwindow
@@ -39,7 +38,7 @@ func NewSlidingWindow(size time.Duration) *SlidingWindow {
 		last:  time.Now(),
 		curr:  currWin,
 		prev:  prevWin,
-		q:     lockfree.NewLockfreeQueue(),
+		q:     lockfree.NewLockfreeQueue[event](),
 	}
 	go sw.start()
 
@@ -53,16 +52,11 @@ type event struct {
 
 func (sw *SlidingWindow) start() {
 	for {
-		el := sw.q.Dequeue()
-		if el == nil {
-			continue
-		}
-		v, ok := el.(event)
+		event, ok := sw.q.Dequeue()
 		if !ok {
-			fmt.Println("WARN: not valid event")
 			continue
 		}
-		sw.record(v.t, v.v)
+		sw.record(event.t, event.v)
 	}
 }
 

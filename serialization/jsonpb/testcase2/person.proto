@@ -1,0 +1,14 @@
+syntax = "proto2";
+package person;
+
+message Person {
+    optional string FirstName = 1 [json_name = "first_name"];
+    optional string LastName = 2 [json_name = "last_name"];
+    optional uint32 age = 3;
+    optional uint32 sex = 4;
+}
+
+message PersonX {
+    optional string FirstName = 1;
+    optional string LastName = 2;
+}

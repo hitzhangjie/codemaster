@@ -7,7 +7,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/hitzhangjie/codemaster/pb/hello"
+	"github.com/hitzhangjie/codemaster/serialization/pb/hello"
 )
 
 func Test_JSONPB_Marshal_DefaultValue(t *testing.T) {

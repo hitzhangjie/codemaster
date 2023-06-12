@@ -3,12 +3,12 @@ package pbx
 import (
 	"testing"
 
-	"github.com/hitzhangjie/codemaster/pbx/git.code.oa.com/examples/hello" // 最新protoc-gen-go生成
+	"github.com/hitzhangjie/codemaster/serialization/pbx/git.code.oa.com/examples/hello" // 最新protoc-gen-go生成
 
 	protoOld "github.com/golang/protobuf/proto"
 	protoNew "google.golang.org/protobuf/proto"
 
-	helloworldNew "github.com/hitzhangjie/codemaster/pbx/git.code.oa.com/examples/helloworld" // 最新protoc-gen-go生成
+	helloworldNew "github.com/hitzhangjie/codemaster/serialization/pbx/git.code.oa.com/examples/helloworld" // 最新protoc-gen-go生成
 	helloworldOld "google.golang.org/grpc/examples/helloworld/helloworld"
 
 	"github.com/stretchr/testify/assert"

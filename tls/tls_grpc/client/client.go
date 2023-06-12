@@ -16,7 +16,7 @@ import (
 
 	"google.golang.org/grpc/credentials"
 
-	pb "github.com/hitzhangjie/codemaster/tls_grpc/proto"
+	pb "github.com/hitzhangjie/codemaster/tls/tls_grpc/proto"
 	"google.golang.org/grpc"
 )
 

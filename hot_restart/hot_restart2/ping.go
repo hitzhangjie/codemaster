@@ -6,8 +6,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hitzhangjie/codemaster/hot_restart2/logger"
-	"github.com/hitzhangjie/codemaster/hot_restart2/server"
+	"github.com/hitzhangjie/codemaster/hot_restart/hot_restart2/logger"
+	"github.com/hitzhangjie/codemaster/hot_restart/hot_restart2/server"
 )
 
 func main() {

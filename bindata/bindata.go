@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hitzhangjie/codemaster/compress"
+	"github.com/hitzhangjie/codemaster/compress/tar"
 	"github.com/iancoleman/strcase"
 )
 
@@ -87,7 +87,7 @@ func ReadFromInputSource(inputSource string) (data []byte, err error) {
 	}
 
 	buf := bytes.Buffer{}
-	err = compress.Tar(inputSource, &buf)
+	err = tar.Tar(inputSource, &buf)
 	if err != nil {
 		return nil, err
 	}

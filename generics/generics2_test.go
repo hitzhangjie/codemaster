@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/hitzhangjie/codemaster/pb/hello"
+	"github.com/hitzhangjie/codemaster/serialization/pb/hello"
 )
 
 var dat []byte

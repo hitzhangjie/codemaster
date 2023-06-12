@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
 
-	"github.com/hitzhangjie/codemaster/otel/metrictest"
+	"github.com/hitzhangjie/codemaster/opentelemetry/otel/metrictest"
 )
 
 // meter can be a global/package variable.

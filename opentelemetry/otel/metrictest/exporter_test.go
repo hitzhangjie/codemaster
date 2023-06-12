@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
 
-	"github.com/hitzhangjie/codemaster/otel/metrictest"
+	"github.com/hitzhangjie/codemaster/opentelemetry/otel/metrictest"
 )
 
 func TestSyncInstruments(t *testing.T) {

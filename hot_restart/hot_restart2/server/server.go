@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/hitzhangjie/codemaster/hot_restart2/logger"
+	"github.com/hitzhangjie/codemaster/hot_restart/hot_restart2/logger"
 )
 
 type Server struct {

@@ -25,6 +25,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/stretchr/testify v1.8.0
 	github.com/v2pro/plz v0.0.0-20200805122259-422184e41b6e
+	github.com/zeebo/assert v1.3.0
 	github.com/zeebo/xxh3 v1.0.2
 	github.com/zeromicro/go-zero v1.3.5
 	github.com/zhenjl/cityhash v0.0.0-20131128155616-cdd6a94144ab

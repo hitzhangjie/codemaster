@@ -1,4 +1,6 @@
-package main_test
+// Package longdataprotocol_test 这里提供了一些mysql测试的case，主要是验证prepare+longblob类型
+// 写一个超大包这种，什么情况下会出现错误，测试表明，只有超过服务器端的限制时才会报错
+package longdataprotocol_test
 
 import (
 	"database/sql"
@@ -14,8 +16,9 @@ func TestMysqlInsert(t *testing.T) {
 	// 插入普通数据
 	t.Run("插入varchar数据", func(t *testing.T) {
 		// 创建1个db
-		db, err := openClient("root", "justdoit", 0)
+		db, err := openClient("root", "justdoit", 0, 0)
 		require.Nil(t, err)
+		defer db.Close()
 
 		// 插入数据测试
 		t.Run("normal", func(t *testing.T) {
@@ -33,28 +36,67 @@ func TestMysqlInsert(t *testing.T) {
 	})
 
 	// 插入64MB+1B的长数据
-	t.Run("longdata - 超过客户端max_allowed_packet限制(64MB)", func(t *testing.T) {
+	t.Run("longdata - 客户端限制64MB，服务器限制64MB", func(t *testing.T) {
 		// 创建1个db
-		db, err := openClient("root", "justdoit", 0)
+		db, err := openClient("root", "justdoit", 1<<26, 1<<26)
 		require.Nil(t, err)
+		defer db.Close()
 
-		db.Exec("")
+		t.Run("写4MB数据，均不超过", func(t *testing.T) {
+			sqlInsertNormal := "insert into mydata(longdata) values(?)"
+			stmt, err := db.Prepare(sqlInsertNormal)
+			require.Nil(t, err)
+			defer stmt.Close()
 
-		sqlInsertNormal := "insert into mydata(longdata) values(?)"
-		stmt, err := db.Prepare(sqlInsertNormal)
-		require.Nil(t, err)
-		defer stmt.Close()
+			_, err = stmt.Exec(makeByteSlice(1<<22 + 1))
+			require.Nil(t, err)
+		})
 
-		// db server最大64MB
-		_, err = stmt.Exec(makeByteSlice(1<<26 + 1))
-		require.NotNil(t, err)
-		merr, ok := err.(*mysql.MySQLError)
-		require.True(t, ok)
-		// &mysql.MySQLError{Number:0x451, Message:"Parameter of prepared statement which is set through mysql_send_long_data() is longer than 'max_allowed_packet' bytes"}
-		require.Equal(t, uint16(0x451), merr.Number)
+		t.Run("写64MB+1B数据，超过了", func(t *testing.T) {
+			sqlInsertNormal := "insert into mydata(longdata) values(?)"
+			stmt, err := db.Prepare(sqlInsertNormal)
+			require.Nil(t, err)
+			defer stmt.Close()
+
+			// db server最大64MB
+			_, err = stmt.Exec(makeByteSlice(1<<26 + 1))
+			require.NotNil(t, err)
+			merr, ok := err.(*mysql.MySQLError)
+			require.True(t, ok)
+			// &mysql.MySQLError{Number:0x451, Message:"Parameter of prepared statement which is set through mysql_send_long_data() is longer than 'max_allowed_packet' bytes"}
+			require.Equal(t, uint16(0x451), merr.Number)
+		})
 	})
 
-	t.Run("longdata - 超过客户端")
+	t.Run("longdata - 客户端限制4MB，服务器限制64MB", func(t *testing.T) {
+		// 创建1个db
+		db, err := openClient("root", "justdoit", 1<<22, 1<<26)
+		require.Nil(t, err)
+		defer db.Close()
+
+		// ==客户端限制，不超过服务器限制时不会报错的
+		t.Run("写4MB数据，==客户端限制，<=服务器限制", func(t *testing.T) {
+			sqlInsertNormal := "insert into mydata(longdata) values(?)"
+			stmt, err := db.Prepare(sqlInsertNormal)
+			require.Nil(t, err)
+			defer stmt.Close()
+
+			_, err = stmt.Exec(makeByteSlice(1<<22 + 1))
+			require.Nil(t, err)
+		})
+
+		// 超过客户端限制，不超过服务器限制时不会报错的
+		t.Run("写8M数据，>=客户端限制，<=服务器限制", func(t *testing.T) {
+			sqlInsertNormal := "insert into mydata(longdata) values(?)"
+			stmt, err := db.Prepare(sqlInsertNormal)
+			require.Nil(t, err)
+			defer stmt.Close()
+
+			_, err = stmt.Exec(makeByteSlice(1<<23 + 1))
+			require.Nil(t, err)
+		})
+
+	})
 }
 
 func makeByteSlice(n int) []byte {
@@ -87,7 +129,7 @@ func openClient(user, passwd string, clientMaxAllowedPacket, serverMaxAllowedPac
 	}
 
 	// 服务端最大包限制
-	if serverMaxAllowedPacket != 0 && serverMaxAllowedPacket != defaultServerMaxAllowedPacket {
+	if serverMaxAllowedPacket != 0 /*&& serverMaxAllowedPacket != defaultServerMaxAllowedPacket*/ {
 		// 只对后续的session生效
 		db.Exec(fmt.Sprintf("set global max_allowed_packet = %d", serverMaxAllowedPacket))
 		db.Close()

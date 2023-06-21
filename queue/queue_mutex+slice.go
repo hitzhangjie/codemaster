@@ -25,6 +25,10 @@ func (q *MutexSliceQueue[T]) Dequeue() (value T, ok bool) {
 		return
 	}
 	v := q.v[0]
+	// FIXME 这里实现有问题，底层slice会被复用，slice在入队的时候被扩容，
+	// 出队的时候，有底层存储被浪费
+	//
+	// 把这个buffer做成一个环形，或者直接用ring.Ring代替
 	q.v = q.v[1:]
 	q.mu.Unlock()
 	return v, true

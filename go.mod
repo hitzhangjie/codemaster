@@ -14,6 +14,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/iancoleman/strcase v0.2.0
+	github.com/influxdata/tdigest v0.0.1
 	github.com/lafikl/consistent v0.0.0-20210222184039-5e8acd7e59f2
 	github.com/libp2p/go-reuseport v0.1.0
 	github.com/lithammer/go-jump-consistent-hash v1.0.2
@@ -25,7 +26,6 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/stretchr/testify v1.8.0
 	github.com/v2pro/plz v0.0.0-20200805122259-422184e41b6e
-	github.com/zeebo/assert v1.3.0
 	github.com/zeebo/xxh3 v1.0.2
 	github.com/zeromicro/go-zero v1.3.5
 	github.com/zhenjl/cityhash v0.0.0-20131128155616-cdd6a94144ab

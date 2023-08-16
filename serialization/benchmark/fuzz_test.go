@@ -11,6 +11,7 @@ import (
 	"github.com/hitzhangjie/codemaster/serialization/benchmark/def"
 )
 
+//go:generate go test -v -run Test_Generate
 func Test_Generate(t *testing.T) {
 	// repeat: 10, 4k
 	// repeat: 20, 10k

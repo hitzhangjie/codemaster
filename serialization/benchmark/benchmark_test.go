@@ -180,6 +180,14 @@ func collectTestfiles() ([]string, error) {
 		return nil, err
 	}
 
+	_, err = os.Lstat(testdata)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+		_ = os.MkdirAll(testdata, os.ModePerm)
+	}
+
 	err = filepath.Walk(testdata, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err

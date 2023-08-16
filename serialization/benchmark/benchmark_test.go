@@ -24,6 +24,8 @@ import (
 	"testing"
 
 	"github.com/bytedance/sonic"
+	segmentio_json "github.com/segmentio/encoding/json"
+
 	"github.com/hitzhangjie/codemaster/serialization/benchmark/def"
 )
 
@@ -65,6 +67,15 @@ func Benchmark_Unmarshal_Slice_HasNoSchema(b *testing.B) {
 					}
 				}
 			})
+			b.Run("segmentio/encoding", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					m := []any{}
+					err := segmentio_json.Unmarshal(dat, &m)
+					if err != nil {
+						panic(err)
+					}
+				}
+			})
 		})
 	}
 }
@@ -95,6 +106,16 @@ func Benchmark_Unmarshal_Slice_HasSchema(b *testing.B) {
 					}
 				}
 			})
+			b.Run("segmentio/encoding", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					m := []any{}
+					err := segmentio_json.Unmarshal(dat, &m)
+					if err != nil {
+						panic(err)
+					}
+				}
+			})
+
 		})
 	}
 }
@@ -123,6 +144,14 @@ func Benchmark_Marshal_Slice_HasNoSchema(b *testing.B) {
 			b.Run("Bytedance/sonic", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					_, err := sonic.Marshal(m)
+					if err != nil {
+						panic(err)
+					}
+				}
+			})
+			b.Run("segmentio/encoding", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					_, err := segmentio_json.Marshal(m)
 					if err != nil {
 						panic(err)
 					}
@@ -163,6 +192,14 @@ func Benchmark_Marshal_Slice_HasSchema(b *testing.B) {
 			b.Run("Bytedance/sonic", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					_, err := sonic.Marshal(sliceValue)
+					if err != nil {
+						panic(err)
+					}
+				}
+			})
+			b.Run("segmentio/encoding", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					_, err := segmentio_json.Marshal(sliceValue)
 					if err != nil {
 						panic(err)
 					}

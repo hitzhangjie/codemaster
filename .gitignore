@@ -1,1 +1,2 @@
 .idea/**
+serialization/benchmark/testdata/*.gen.json

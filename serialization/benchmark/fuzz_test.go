@@ -7,30 +7,9 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/hitzhangjie/codemaster/serialization/benchmark/def"
 )
-
-type Person struct {
-	Name        string      `fuzz:"length(8,32)"`
-	Age         int         `fuzz:"range(1,100)"`
-	Address     string      `fuzz:"length(20,60)"`
-	Education   []Education `fuzz:"length(4)"`
-	ContactInfo ContactInfo
-
-	XXXX string `fuzz:"ignore"`
-}
-
-type Education struct {
-	School string `fuzz:"length(8,16)"`
-	From   string `fuzz:"date(2006-01-02)"`
-	To     string `fuzz:"date(2006-01-02)"`
-}
-
-type ContactInfo struct {
-	Mobile string `fuzz:"length(7,11)"`
-	Home   string `fuzz:"length(7,11)"`
-	Work   string `fuzz:"length(7,11)"`
-	Email  string `fuzz:"length(10,64)"`
-}
 
 func Test_Generate(t *testing.T) {
 	// repeat: 10, 4k
@@ -42,8 +21,8 @@ func Test_Generate(t *testing.T) {
 	// repeat: 1000, 491k
 	repeatTimes := []int{10, 20, 50, 100, 200, 500, 1000}
 	for _, repeatTime := range repeatTimes {
-		slice := reflect.MakeSlice(reflect.TypeOf([]Person{}), 0, 3)
-		rt := reflect.TypeOf(Person{})
+		slice := reflect.MakeSlice(reflect.TypeOf([]def.Person{}), 0, 3)
+		rt := reflect.TypeOf(def.Person{})
 
 		for i := 0; i < repeatTime; i++ {
 			//slice = reflect.Append(slice, newInstance(rt))

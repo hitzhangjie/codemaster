@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/bytedance/sonic"
+	jsoniter "github.com/json-iterator/go"
 	segmentio_json "github.com/segmentio/encoding/json"
 
 	"github.com/hitzhangjie/codemaster/serialization/benchmark/def"
@@ -44,38 +45,25 @@ func TestMain(m *testing.M) {
 func Benchmark_Unmarshal_Slice_HasNoSchema(b *testing.B) {
 	for _, f := range testfiles {
 		testcase := filepath.Base(f)
+
+		// foreach testcase
 		b.Run(testcase, func(b *testing.B) {
 			dat, err := os.ReadFile(f)
 			if err != nil {
 				panic(err)
 			}
-			b.Run("Go/encoding/json", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					m := []any{}
-					err := json.Unmarshal(dat, &m)
-					if err != nil {
-						panic(err)
+			// foreach marshaler
+			for _, marshaler := range marshalers {
+				b.Run(marshaler.Name, func(b *testing.B) {
+					for i := 0; i < b.N; i++ {
+						m := []any{}
+						err := marshaler.Unmarshal(dat, &m)
+						if err != nil {
+							panic(err)
+						}
 					}
-				}
-			})
-			b.Run("Bytedance/sonic", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					m := []any{}
-					err := sonic.Unmarshal(dat, &m)
-					if err != nil {
-						panic(err)
-					}
-				}
-			})
-			b.Run("segmentio/encoding", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					m := []any{}
-					err := segmentio_json.Unmarshal(dat, &m)
-					if err != nil {
-						panic(err)
-					}
-				}
-			})
+				})
+			}
 		})
 	}
 }
@@ -83,39 +71,25 @@ func Benchmark_Unmarshal_Slice_HasNoSchema(b *testing.B) {
 func Benchmark_Unmarshal_Slice_HasSchema(b *testing.B) {
 	for _, f := range testfiles {
 		testcase := filepath.Base(f)
+
+		// foreach testcase
 		b.Run(testcase, func(b *testing.B) {
 			dat, err := os.ReadFile(f)
 			if err != nil {
 				panic(err)
 			}
-			b.Run("Go/encoding/json", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					m := []def.Person{}
-					err := json.Unmarshal(dat, &m)
-					if err != nil {
-						panic(err)
+			// foreach marshaler
+			for _, marshaler := range marshalers {
+				b.Run(marshaler.Name, func(b *testing.B) {
+					for i := 0; i < b.N; i++ {
+						m := []def.Person{}
+						err := marshaler.Unmarshal(dat, &m)
+						if err != nil {
+							panic(err)
+						}
 					}
-				}
-			})
-			b.Run("Bytedance/sonic", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					m := []def.Person{}
-					err := sonic.Unmarshal(dat, &m)
-					if err != nil {
-						panic(err)
-					}
-				}
-			})
-			b.Run("segmentio/encoding", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					m := []any{}
-					err := segmentio_json.Unmarshal(dat, &m)
-					if err != nil {
-						panic(err)
-					}
-				}
-			})
-
+				})
+			}
 		})
 	}
 }
@@ -123,6 +97,8 @@ func Benchmark_Unmarshal_Slice_HasSchema(b *testing.B) {
 func Benchmark_Marshal_Slice_HasNoSchema(b *testing.B) {
 	for _, f := range testfiles {
 		testcase := filepath.Base(f)
+
+		// foreach testfile
 		b.Run(testcase, func(b *testing.B) {
 			dat, err := os.ReadFile(f)
 			if err != nil {
@@ -133,30 +109,17 @@ func Benchmark_Marshal_Slice_HasNoSchema(b *testing.B) {
 				panic(err)
 			}
 
-			b.Run("Go/encoding/json", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					_, err := json.Marshal(m)
-					if err != nil {
-						panic(err)
+			// foreach marshaler
+			for _, marshaler := range marshalers {
+				b.Run(marshaler.Name, func(b *testing.B) {
+					for i := 0; i < b.N; i++ {
+						_, err := marshaler.Marshal(m)
+						if err != nil {
+							panic(err)
+						}
 					}
-				}
-			})
-			b.Run("Bytedance/sonic", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					_, err := sonic.Marshal(m)
-					if err != nil {
-						panic(err)
-					}
-				}
-			})
-			b.Run("segmentio/encoding", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					_, err := segmentio_json.Marshal(m)
-					if err != nil {
-						panic(err)
-					}
-				}
-			})
+				})
+			}
 		})
 	}
 }
@@ -180,31 +143,19 @@ func Benchmark_Marshal_Slice_HasSchema(b *testing.B) {
 		}
 		sliceValue := slice.Interface()
 
+		// foreach testfile
 		b.Run(arg.desc, func(b *testing.B) {
-			b.Run("Go/encoding/json", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					_, err := json.Marshal(sliceValue)
-					if err != nil {
-						panic(err)
+			// foreach marshaler
+			for _, marshaler := range marshalers {
+				b.Run(marshaler.Name, func(b *testing.B) {
+					for i := 0; i < b.N; i++ {
+						_, err := marshaler.Marshal(sliceValue)
+						if err != nil {
+							panic(err)
+						}
 					}
-				}
-			})
-			b.Run("Bytedance/sonic", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					_, err := sonic.Marshal(sliceValue)
-					if err != nil {
-						panic(err)
-					}
-				}
-			})
-			b.Run("segmentio/encoding", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					_, err := segmentio_json.Marshal(sliceValue)
-					if err != nil {
-						panic(err)
-					}
-				}
-			})
+				})
+			}
 		})
 	}
 }
@@ -247,4 +198,17 @@ func collectTestfiles() ([]string, error) {
 		return v1 < v2
 	})
 	return files, nil
+}
+
+type Marshaler struct {
+	Name      string
+	Marshal   func(any) ([]byte, error)
+	Unmarshal func([]byte, any) error
+}
+
+var marshalers = []Marshaler{
+	{"Go/encoding/json", json.Marshal, json.Unmarshal},
+	{"Bytedance/sonic", sonic.Marshal, sonic.Unmarshal},
+	{"Segmentio/json", segmentio_json.Marshal, segmentio_json.Unmarshal},
+	{"jsoniter/go", jsoniter.Marshal, jsoniter.Unmarshal},
 }

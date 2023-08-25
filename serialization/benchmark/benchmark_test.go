@@ -10,18 +10,22 @@
 // - simdjson, https://www.libhunt.com/r/simdjson
 // - simdjson-go, https://www.libhunt.com/r/simdjson-go
 // - rapidjson, https://www.libhunt.com/r/rapidjson
+//
+// 测试结果说明：
+// - 这里是用的不同大小的json数据去unmarshal成slice、或者将这样大小的slice再反过来marshal，
+// - 然后，slice分 有schema定义([]def.Person)、无schema([]any)定义 两种情况，
+//
+// 测试结果显示，序列化反序列化效率基本保持这样的顺序，只是“差距”大小不同，
+// 性能排序：bytedance/sonic > segmentio/encoding > jsoniter > stdlib
+// 多数数据大小情况下，bytedance/sonic性能大概是stdlib的4~5倍左右。
 package benchmark
 
 import (
 	"bytes"
 	"encoding/json"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
-	"strconv"
-	"strings"
 	"sync"
 	"testing"
 
@@ -35,6 +39,8 @@ import (
 var testfiles []string
 
 func TestMain(m *testing.M) {
+	prepareTestData()
+
 	files, err := collectTestfiles()
 	if err != nil {
 		panic(err)
@@ -160,46 +166,6 @@ func Benchmark_Marshal_Slice_HasSchema(b *testing.B) {
 			}
 		})
 	}
-}
-
-func collectTestfiles() ([]string, error) {
-	var files []string
-
-	testdata, err := filepath.Abs("testdata")
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = os.Lstat(testdata)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
-		_ = os.MkdirAll(testdata, os.ModePerm)
-	}
-
-	err = filepath.Walk(testdata, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !strings.HasSuffix(path, ".json") {
-			return nil
-		}
-		files = append(files, path)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	sort.Slice(files, func(i, j int) bool {
-		f1, f2 := filepath.Base(files[i]), filepath.Base(files[j])
-		i1, i2 := strings.Index(f1, "-"), strings.Index(f2, "-")
-		s1, s2 := f1[:i1], f2[:i2]
-		v1, _ := strconv.Atoi(s1)
-		v2, _ := strconv.Atoi(s2)
-		return v1 < v2
-	})
-	return files, nil
 }
 
 type Marshaler struct {

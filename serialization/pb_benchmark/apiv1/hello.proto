@@ -1,0 +1,37 @@
+syntax="proto3";
+package hello;
+
+option go_package="./pb";
+
+service HelloService{
+    rpc Hello(HelloRequest) returns(HelloResponse);
+}
+
+message HelloRequest {
+    string f1 = 1;
+    int32  f2 = 2; 
+    uint32 f3 = 3;
+    int64  f4 = 4;
+    uint64 f5 = 5;
+    bool   f6 = 6;
+    bytes  f7 = 7;
+    map<int32,int32> f8 = 8;
+
+    repeated Tip tips = 9;
+}
+
+message HelloResponse {
+    
+}
+
+message Tip {
+    string f1 = 1;
+    int32  f2 = 2; 
+    uint32 f3 = 3;
+    int64  f4 = 4;
+    uint64 f5 = 5;
+    bool   f6 = 6;
+    bytes  f7 = 7;
+    map<int32,int32> f8 = 8;
+}
+

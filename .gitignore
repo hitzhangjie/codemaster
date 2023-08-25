@@ -1,2 +1,27 @@
-.idea/**
+# Ignore all
+*
+# Unignore all with extensions
+!*.*
+# Unignore all dirs
+!*/
+
+# ignore IDE settings
+.idea/
+.fleet/
+!.vscode/
+
+# ignore others
+
+# go test binary
+*.test
+
+# go test tmpfiles
 serialization/benchmark/testdata/
+serialization/pb_benchmark/vendor/protobuf_v1.3.5/protoc-gen-go/protoc-gen-go_v1.3.5
+serialization/pb_benchmark/vendor/protobuf_v1.5.3/protoc-gen-go/protoc-gen-go_v1.5.3
+serialization/pb_benchmark/go_v1.3.5/
+serialization/pb_benchmark/go_v1.5.3/
+serialization/pb_benchmark/gogofast/
+serialization/pb_benchmark/vtproto/
+
+

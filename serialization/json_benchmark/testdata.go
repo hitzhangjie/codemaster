@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hitzhangjie/codemaster/serialization/benchmark/def"
+	"github.com/hitzhangjie/codemaster/serialization/json_benchmark/def"
 )
 
 func prepareTestData() {

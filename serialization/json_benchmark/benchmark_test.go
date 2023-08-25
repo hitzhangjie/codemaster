@@ -33,7 +33,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	segmentio_json "github.com/segmentio/encoding/json"
 
-	"github.com/hitzhangjie/codemaster/serialization/benchmark/def"
+	"github.com/hitzhangjie/codemaster/serialization/json_benchmark/def"
 )
 
 var testfiles []string

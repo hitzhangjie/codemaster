@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestXXX(t *testing.T) {
+func Test_DecodeAsNumberRatherThanFloat64(t *testing.T) {
 	m := map[string]uint64{
 		"key": math.MaxUint64,
 	}

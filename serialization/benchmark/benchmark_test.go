@@ -13,6 +13,7 @@
 package benchmark
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/fs"
 	"os"
@@ -21,6 +22,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/bytedance/sonic"
@@ -208,7 +210,37 @@ type Marshaler struct {
 
 var marshalers = []Marshaler{
 	{"Go/encoding/json", json.Marshal, json.Unmarshal},
-	{"Bytedance/sonic", sonic.Marshal, sonic.Unmarshal},
-	{"Segmentio/json", segmentio_json.Marshal, segmentio_json.Unmarshal},
+	{"Bytedance/sonic-default", sonic.Marshal, sonic.Unmarshal},
+	{"Bytedance/sonic-compatmode", sonic.ConfigStd.Marshal, sonic.ConfigStd.Unmarshal},
+	{"Bytedance/sonic-perfmode", sonic.ConfigFastest.Marshal, sonic.ConfigFastest.Unmarshal},
+	{"Segmentio/json-compatmode", segmentio_json.Marshal, segmentio_json.Unmarshal},
+	{"Segmentio/json-perfmode", segmentio_marshal_fast, segmentio_unmarshal_fast},
 	{"jsoniter/go", jsoniter.Marshal, jsoniter.Unmarshal},
+}
+
+var bp = sync.Pool{
+	New: func() any { return make([]byte, 0, 256) },
+}
+
+func segmentio_marshal_fast(v any) ([]byte, error) {
+	b := bp.Get().([]byte)
+	defer bp.Put(b)
+
+	buf := bytes.NewBuffer(b)
+	enc := segmentio_json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	enc.SetAppendNewline(false)
+	enc.SetSortMapKeys(false)
+	enc.SetTrustRawMessage(true)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func segmentio_unmarshal_fast(b []byte, v any) error {
+	dec := segmentio_json.NewDecoder(bytes.NewBuffer(b))
+	dec.ZeroCopy()
+	dec.DontMatchCaseInsensitiveStructFields()
+	return dec.Decode(v)
 }

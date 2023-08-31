@@ -7,18 +7,18 @@ cd certs
 # 生成CA的key和自签名证书
 echo "generate ca.key, ca.crt, then check"
 openssl genrsa -out ca.key 4096
-openssl req -new -x509 -sha256 -days 365 -key ca.key -subj "/C=CN/ST=Guangdong/L=Shenzhen/O=Tencent/CN=MyRootCA" -out ca.crt
+openssl req -new -x509 -sha256 -days 365 -key ca.key -subj "/C=CN/ST=Guangdong/L=Shenzhen/O=MyOrg/CN=MyRootCA" -out ca.crt
 openssl x509 -noout -text -in ca.crt
 
 # 生成server的key和证书签名请求
 echo "generate server.key, server.csr"
 openssl genrsa -out server.key 2048
-openssl req -new -sha256 -key server.key -out server.csr -subj "/C=CN/ST=Guangdong/L=Shenzhen/O=Tencent/OU=DFM/CN=localhost"
+openssl req -new -sha256 -key server.key -out server.csr -subj "/C=CN/ST=Guangdong/L=Shenzhen/O=MyOrg/OU=DFM/CN=localhost"
 
 # 生成client的key和证书签名请求
 echo "generate client.key, client.csr"
 openssl genrsa -out client.key 2048
-openssl req -new -sha256 -key client.key -out client.csr -subj "/C=CN/ST=Guangdong/L=Shenzhen/O=Tencent/OU=DFM/CN=localhost"
+openssl req -new -sha256 -key client.key -out client.csr -subj "/C=CN/ST=Guangdong/L=Shenzhen/O=MyOrg/OU=DFM/CN=localhost"
 
 # 为证书签名请求生成证书
 echo "generate cert for server.csr/client.csr"

@@ -10,11 +10,11 @@ type myerr struct {
 }
 
 func (e *myerr) Error() string {
-	return "xxxxxxx"
+	return "this is an error"
 }
 
-func Test_XXXX(t *testing.T) {
-	err := get()
+func Test_CheckNilError(t *testing.T) {
+	err := doSomething()
 	// 动态类型不为nil，err就不为nil（甭管动态值是否为nil）
 	if err != nil {
 		assert.IsType(t, err, &myerr{})
@@ -23,7 +23,7 @@ func Test_XXXX(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func get() error {
+func doSomething() error {
 	var e *myerr
 	return e
 }

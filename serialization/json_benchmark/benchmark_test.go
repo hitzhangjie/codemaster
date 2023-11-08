@@ -30,6 +30,7 @@ import (
 	"testing"
 
 	"github.com/bytedance/sonic"
+	go_json "github.com/goccy/go-json"
 	jsoniter "github.com/json-iterator/go"
 	segmentio_json "github.com/segmentio/encoding/json"
 
@@ -182,6 +183,7 @@ var marshalers = []Marshaler{
 	{"Segmentio/json-compatmode", segmentio_json.Marshal, segmentio_json.Unmarshal},
 	{"Segmentio/json-perfmode", segmentio_marshal_fast, segmentio_unmarshal_fast},
 	{"jsoniter/go", jsoniter.Marshal, jsoniter.Unmarshal},
+	{"goccy/go-json", go_json.Marshal, go_json.Unmarshal},
 }
 
 var bp = sync.Pool{

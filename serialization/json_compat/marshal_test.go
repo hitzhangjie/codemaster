@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/bytedance/sonic/option"
+	"github.com/davecgh/go-spew/spew"
 	sjson "github.com/segmentio/encoding/json"
 	"github.com/stretchr/testify/require"
 )
@@ -203,4 +204,30 @@ func BenchmarkMarshal_Struct(b *testing.B) {
 		}
 	})
 
+}
+
+func TestSonicAST(t *testing.T) {
+	dat := `{"name":"xiaoming","age":10,"sex":"male","address":"shandong province", "grades":{"chinese":99,"english":98}}`
+	type Grades struct {
+		Chinese float64
+		English float64
+	}
+	grades := Grades{}
+
+	// 按需取grades
+	node, err := sonic.GetFromString(dat, "grades")
+	require.Nil(t, err)
+	require.Nil(t, node.Check())
+
+	// 转换为map
+	m, err := node.Map()
+	require.Nil(t, err)
+	spew.Dump(m)
+
+	// 转换为grade
+	dat, err = node.Raw()
+	require.Nil(t, err)
+	err = sonic.Unmarshal([]byte(dat), &grades)
+	require.Nil(t, err)
+	spew.Dump(grades)
 }

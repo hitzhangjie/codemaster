@@ -23,6 +23,7 @@ serialization/pb_benchmark/go_v1.3.5/
 serialization/pb_benchmark/go_v1.5.3/
 serialization/pb_benchmark/gogofast/
 serialization/pb_benchmark/vtproto/
+serialization/json_benchmark/testdata/
 
 tls/tls_tcp/certs/
 tls/tls_grpc/certs/

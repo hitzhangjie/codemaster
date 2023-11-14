@@ -1,7 +1,8 @@
 package main
 
 import (
-    "time"
+	"runtime"
+	"time"
 )
 
 // 方法1
@@ -14,12 +15,12 @@ import (
 // }
 
 func main() {
-    // 方法3
-    ballast := make([]byte, 1<<30)
+	// 方法3
+	ballast := make([]byte, 1<<30)
 
-    // do something
-    // ...
-    time.Sleep(time.Minute)
+	// do something
+	// ...
+	time.Sleep(time.Minute)
 
-    runtime.KeepAlive(&ballast)
+	runtime.KeepAlive(&ballast)
 }

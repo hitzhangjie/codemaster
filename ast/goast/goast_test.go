@@ -117,29 +117,18 @@ func TestGoAst_ParseFile_AppendFunc(t *testing.T) {
 		t.Fatalf("parser.ParseFile: %v", err)
 	}
 
-	decl := ast.FuncDecl{
+	decl := &ast.FuncDecl{
 		Doc:  nil,
 		Recv: nil,
 		Name: ast.NewIdent("helloworld"),
 		Type: &ast.FuncType{
-			Func: 0,
-			Params: &ast.FieldList{
-				Opening: 0,
-				List:    nil,
-				Closing: 0,
-			},
-			Results: nil,
+			Func:    0,
+			Params:  &ast.FieldList{},
+			Results: &ast.FieldList{},
 		},
 		Body: &ast.BlockStmt{
 			Lbrace: 0,
 			List: []ast.Stmt{
-				&ast.CallExpr{
-					Fun:      nil,
-					Lparen:   0,
-					Args:     nil,
-					Ellipsis: 0,
-					Rparen:   0,
-				},
 				&ast.ReturnStmt{
 					Return:  0,
 					Results: nil,
@@ -149,10 +138,10 @@ func TestGoAst_ParseFile_AppendFunc(t *testing.T) {
 		},
 	}
 
-	file.Decls = append(file.Decls, &decl)
+	file.Decls = append(file.Decls, decl)
 
-	buf := bytes.Buffer{}
-	err = format.Node(&buf, fset, file)
+	buf := &bytes.Buffer{}
+	err = format.Node(buf, fset, file)
 	if err != nil {
 		panic(err)
 	}

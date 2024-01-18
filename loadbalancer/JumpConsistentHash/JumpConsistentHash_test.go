@@ -12,7 +12,7 @@ import (
 )
 
 // jump consistent hash 感觉负载不均衡比较明显
-// 标准差，还是最大、最小负载只差占总负载的比例，这个要优于 go-zero 中实现的一致性hash方案，
+// 标准差，还是最大、最小负载之差占总负载的比例，这个要优于 go-zero 中实现的一致性hash方案，
 // 但是jump consistent hash本身的局限性：服务名不能是任意的，要求按序号递增，更推荐应用于 data shards 场景.
 /*
 2022/08/01 15:40:35 times: 10000 标准方差: 3.053518398401261  max: 20  min: 1 (max-min)/times: 0.0019

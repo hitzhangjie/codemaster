@@ -1,6 +1,8 @@
 package uuid
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/google/uuid"
@@ -54,4 +56,26 @@ func Benchmark_UUIDv1_ParallelGenerate(b *testing.B) {
 			//assert.Len(b, v, 16)
 		}
 	})
+}
+
+// UUIDv1 isn't safe for generating unique id in parallel.
+// If want to generate unique id in parallel, use UUIDv4 instead.
+func Test_UUIDv1_Generate_Dup(t *testing.T) {
+	var existed sync.Map
+	for i := 0; i < 10; i++ {
+		go func() {
+			for {
+				v, err := uuid.NewUUID()
+				if err != nil {
+					panic(err)
+				}
+				_, loaded := existed.LoadOrStore(v, v)
+				if loaded {
+					panic(fmt.Sprintf("found dup uuid: %v", v.String()))
+				}
+			}
+		}()
+	}
+
+	select {}
 }

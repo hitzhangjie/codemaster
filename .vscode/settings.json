@@ -1,0 +1,17 @@
+{
+    // exdlude files from the explorer, which are not needed by git
+    "files.exclude": {
+        // ignore VCS folders
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        // ignore IDE folders
+        "**/.vscode": false,
+        "**/.idea": true,
+        "**/.fleet": true, 
+        // ignore test binary
+        "**/*.test": true,
+    },
+}

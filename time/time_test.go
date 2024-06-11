@@ -9,7 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestXxx(t *testing.T) {
+type Event struct {
+	Time string `json:"time"`
+}
+
+func Test_timezone(t *testing.T) {
 	// time.Time格式化存储到字符串时注意带上时区信息，因为t.Format(layout)会按Local时区，
 	// 但是time.Parse(layout, t)时会按UTC，这样根据时间比较先后时会出问题……更建议用unixnano代替t.Format后的字符串、time.Time
 	//
@@ -46,6 +50,13 @@ func TestXxx(t *testing.T) {
 	assert.Equal(t, t2.UnixNano(), tt2.UnixNano())
 }
 
-type Event struct {
-	Time string `json:"time"`
+func Test_truncate(t *testing.T) {
+	now := time.Now()
+	fmt.Println(now.Format("2006-01-02 15:04:05.999"))
+
+	// truncate `now` to day
+	fmt.Println(now.Truncate(time.Hour))
+
+	// 跟时区有关系，hour不一定是0
+	fmt.Println(now.Truncate(time.Hour * 24))
 }

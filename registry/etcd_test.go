@@ -84,7 +84,11 @@ func startServiceInstances(t *testing.T, client *clientv3.Client, lease clientv3
 	for dsaInstanceIdx := 1; dsaInstanceIdx <= 10000; dsaInstanceIdx++ {
 		go func() {
 			// get others
-			revision := getbyprefix(t, client)
+			revision, err := getbyprefix(t, client, "/")
+			if err != nil {
+				t.Logf("getbyprefix failed: err=%v, revision=%d", err, revision)
+				return
+			}
 
 			// watch others since revision
 			go func() {
@@ -100,7 +104,7 @@ func startServiceInstances(t *testing.T, client *clientv3.Client, lease clientv3
 
 			// register itself
 			myself := fmt.Sprintf("/myself-%d", dsaInstanceIdx)
-			_, err := client.Put(context.Background(), myself, "value", clientv3.WithLease(lease))
+			_, err = client.Put(context.Background(), myself, "value", clientv3.WithLease(lease))
 			if err != nil {
 				t.Logf("register myself fail: key=%s, err=%v", myself, err)
 				time.Sleep(time.Second / 10000)
@@ -109,16 +113,15 @@ func startServiceInstances(t *testing.T, client *clientv3.Client, lease clientv3
 	}
 }
 
-func getbyprefix(t *testing.T, client *clientv3.Client) int64 {
-	var revision int64 = 0
-	var page = 1
-	var key = "/"
+func getbyprefix(t *testing.T, client *clientv3.Client, key string) (revision int64, err error) {
+	var pageno = 1
+	var pagesize = 100
 
 	opts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
 		clientv3.WithRange(clientv3.GetPrefixRangeEnd(key)),
-		clientv3.WithLimit(100),
+		clientv3.WithLimit(int64(pagesize)),
 		// clientv3.WithRev(x)
 	}
 
@@ -136,11 +139,12 @@ func getbyprefix(t *testing.T, client *clientv3.Client) int64 {
 			break
 		}
 		for _, kv := range rsp.Kvs {
-			t.Logf("getbyprefix: page=%d key=%s", page, kv.Key)
-			key = string(kv.Key)
+			t.Logf("getbyprefix: page=%d key=%s", pageno, kv.Key)
 		}
-		page++
-		time.Sleep(time.Millisecond * 10)
+		key = string(rsp.Kvs[len(rsp.Kvs)-1].Key)
+
+		pageno++
+		time.Sleep(time.Millisecond * 100)
 	}
-	return revision
+	return revision, nil
 }

@@ -113,12 +113,11 @@ func getbyprefix(t *testing.T, client *clientv3.Client) int64 {
 	var revision int64 = 0
 	var page = 1
 	var key = "/"
-	var end = "/zzzzzz"
 
 	opts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
-		clientv3.WithRange(end),
+		clientv3.WithRange(clientv3.GetPrefixRangeEnd(key)),
 		clientv3.WithLimit(100),
 	}
 

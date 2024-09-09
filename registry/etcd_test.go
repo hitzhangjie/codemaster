@@ -90,7 +90,7 @@ func startServiceInstances(t *testing.T, client *clientv3.Client, lease clientv3
 			go func() {
 				ch := client.Watch(context.TODO(), "/myname",
 					clientv3.WithPrefix(),
-					clientv3.WithRev(revision))
+					clientv3.WithRev(revision+1))
 				for msg := range ch {
 					for _, evt := range msg.Events {
 						t.Logf("watchevent: type=%v key=%s val=%s", evt.Type, evt.Kv.Key, evt.Kv.Value)
@@ -119,6 +119,7 @@ func getbyprefix(t *testing.T, client *clientv3.Client) int64 {
 		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
 		clientv3.WithRange(clientv3.GetPrefixRangeEnd(key)),
 		clientv3.WithLimit(100),
+		// clientv3.WithRev(x)
 	}
 
 	for {
@@ -128,15 +129,15 @@ func getbyprefix(t *testing.T, client *clientv3.Client) int64 {
 			continue
 		}
 		if revision == 0 {
+			revision = rsp.Header.Revision
 			opts = append(opts, clientv3.WithRev(rsp.Header.Revision))
-		}
-
-		for _, kv := range rsp.Kvs {
-			t.Logf("getbyprefix: page=%d key=%s", page, kv.Key)
-			key = string(kv.Key)
 		}
 		if !rsp.More {
 			break
+		}
+		for _, kv := range rsp.Kvs {
+			t.Logf("getbyprefix: page=%d key=%s", page, kv.Key)
+			key = string(kv.Key)
 		}
 		page++
 		time.Sleep(time.Millisecond * 10)

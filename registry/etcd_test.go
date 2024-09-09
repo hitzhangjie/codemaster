@@ -133,19 +133,18 @@ func getbyprefix(t *testing.T, client *clientv3.Client, key string) (revision in
 	var fetchedKeys = 0
 
 	opts := []clientv3.OpOption{
+		// we specify [key, getprefixrangeend(key)), so comment this line
 		// clientv3.WithPrefix(),
 		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
 		clientv3.WithRange(clientv3.GetPrefixRangeEnd(key)),
 		clientv3.WithLimit(int64(pagesize)),
+		// we need current revision, so comment this line, when fetching
+		// following pages, we need to specify the revision there
 		// clientv3.WithRev(x)
 	}
 
 	for {
-		nopts := opts
-		if pageno == 1 {
-			nopts = append(nopts, clientv3.WithPrefix())
-		}
-		rsp, err := client.Get(context.Background(), key, nopts...)
+		rsp, err := client.Get(context.Background(), key, opts...)
 		if err != nil {
 			t.Logf("Failed to get key-value pair in etcd, error: %v", err)
 			continue

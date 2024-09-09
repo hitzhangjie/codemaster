@@ -164,7 +164,11 @@ func getbyprefix(t *testing.T, client *clientv3.Client, key string) (revision in
 		last := string(rsp.Kvs[len(rsp.Kvs)-1].Key)
 
 		// record fetched kvpairs
-		for _, kv := range rsp.Kvs {
+		for i, kv := range rsp.Kvs {
+			if pageno != 1 && i == 0 {
+				continue
+			}
+
 			fetchedKeys++
 			t.Logf("getbyprefix: range=[%s ~ %s] page=%d key=%s fetchedKeys=%d", key, last, pageno, kv.Key, fetchedKeys)
 

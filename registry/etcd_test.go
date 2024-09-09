@@ -31,13 +31,16 @@ func Test_etcd_register(t *testing.T) {
 	go keepalive(t, client, lease.ID)
 
 	// provided some service instances started and register into etcd registry
-	numOfInstances := 10000
-	prepareServiceInstances(t, client, lease.ID, numOfInstances)
+	prepareServiceInstances(t, client, lease.ID, 10000)
 
 	// provided every service to fetch the instances list from registry
-	startServiceInstances(t, client, lease.ID)
+	startServiceInstances(t, client, lease.ID, 1)
 
-	time.Sleep(time.Second * 20)
+	mu.Lock()
+	num := len(set)
+	mu.Unlock()
+
+	t.Logf(fmt.Sprintf("found %d nodes", num))
 }
 
 func keepalive(t *testing.T, client *clientv3.Client, lease clientv3.LeaseID) {
@@ -64,7 +67,7 @@ func prepareServiceInstances(t *testing.T, client *clientv3.Client, lease client
 	wg := sync.WaitGroup{}
 	wg.Add(total)
 	begin := time.Now()
-	for i := 0; i < total; i++ {
+	for i := 1; i <= total; i++ {
 		go func() {
 			defer wg.Done()
 			key := fmt.Sprintf("/myname/%d", i)
@@ -80,9 +83,15 @@ func prepareServiceInstances(t *testing.T, client *clientv3.Client, lease client
 	t.Logf("put %d kvpairs ... %v", total, time.Since(begin))
 }
 
-func startServiceInstances(t *testing.T, client *clientv3.Client, lease clientv3.LeaseID) {
-	for dsaInstanceIdx := 1; dsaInstanceIdx <= 10000; dsaInstanceIdx++ {
+var mu sync.Mutex
+var set = map[string]struct{}{}
+
+func startServiceInstances(t *testing.T, client *clientv3.Client, lease clientv3.LeaseID, total int) {
+	wg := sync.WaitGroup{}
+	for dsaInstanceIdx := 1; dsaInstanceIdx <= total; dsaInstanceIdx++ {
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			// get others
 			revision, err := getbyprefix(t, client, "/")
 			if err != nil {
@@ -98,6 +107,10 @@ func startServiceInstances(t *testing.T, client *clientv3.Client, lease clientv3
 				for msg := range ch {
 					for _, evt := range msg.Events {
 						t.Logf("watchevent: type=%v key=%s val=%s", evt.Type, evt.Kv.Key, evt.Kv.Value)
+
+						mu.Lock()
+						set[string(evt.Kv.Key)] = struct{}{}
+						mu.Unlock()
 					}
 				}
 			}()
@@ -111,14 +124,16 @@ func startServiceInstances(t *testing.T, client *clientv3.Client, lease clientv3
 			}
 		}()
 	}
+	wg.Wait()
 }
 
 func getbyprefix(t *testing.T, client *clientv3.Client, key string) (revision int64, err error) {
 	var pageno = 1
 	var pagesize = 100
+	var fetchedKeys = 0
 
 	opts := []clientv3.OpOption{
-		clientv3.WithPrefix(),
+		// clientv3.WithPrefix(),
 		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
 		clientv3.WithRange(clientv3.GetPrefixRangeEnd(key)),
 		clientv3.WithLimit(int64(pagesize)),
@@ -126,22 +141,45 @@ func getbyprefix(t *testing.T, client *clientv3.Client, key string) (revision in
 	}
 
 	for {
-		rsp, err := client.Get(context.Background(), key, opts...)
+		nopts := opts
+		if pageno == 1 {
+			nopts = append(nopts, clientv3.WithPrefix())
+		}
+		rsp, err := client.Get(context.Background(), key, nopts...)
 		if err != nil {
 			t.Logf("Failed to get key-value pair in etcd, error: %v", err)
 			continue
 		}
+
+		// record current revision
 		if revision == 0 {
 			revision = rsp.Header.Revision
 			opts = append(opts, clientv3.WithRev(rsp.Header.Revision))
 		}
+
+		// record next range start
+		if len(rsp.Kvs) == 0 {
+			break
+		}
+		last := string(rsp.Kvs[len(rsp.Kvs)-1].Key)
+
+		// record fetched kvpairs
+		for _, kv := range rsp.Kvs {
+			fetchedKeys++
+			t.Logf("getbyprefix: range=[%s ~ %s] page=%d key=%s fetchedKeys=%d", key, last, pageno, kv.Key, fetchedKeys)
+
+			mu.Lock()
+			set[string(kv.Key)] = struct{}{}
+			mu.Unlock()
+		}
+
+		// if there's no more pages
 		if !rsp.More {
 			break
 		}
-		for _, kv := range rsp.Kvs {
-			t.Logf("getbyprefix: page=%d key=%s", pageno, kv.Key)
-		}
-		key = string(rsp.Kvs[len(rsp.Kvs)-1].Key)
+
+		// prepare query param for next page
+		key = last
 
 		pageno++
 		time.Sleep(time.Millisecond * 100)

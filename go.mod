@@ -5,7 +5,7 @@ go 1.22.4
 require (
 	github.com/RoaringBitmap/roaring v0.9.4
 	github.com/bruceshao/lockfree v1.0.3
-	github.com/bytedance/sonic v1.10.0
+	github.com/bytedance/sonic v1.12.2
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f
@@ -49,8 +49,11 @@ require (
 
 require (
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
+	github.com/bytedance/sonic/loader v0.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.0 // indirect
+	github.com/cloudwego/base64x v0.1.4 // indirect
+	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect

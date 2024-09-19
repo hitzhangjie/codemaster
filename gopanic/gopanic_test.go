@@ -69,7 +69,7 @@ func fastStringToBytes(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&byteSliceHeader))
 }
 
-// this is safe
+// this is safe, but typecasting is more efficient since go1.22
 //
 // see: https://groups.google.com/g/golang-nuts/c/Zsfk-VMd_fU/m/O1ru4fO-BgAJ
 // see: https://cs.opensource.google/go/go/+/refs/tags/go1.23.1:src/unsafe/unsafe.go

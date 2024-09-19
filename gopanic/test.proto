@@ -1,0 +1,9 @@
+syntax = "proto3";
+package gopanic;
+
+option go_package="github.com/hitzhangjie/gopanic";
+
+message TestMessage {
+    bytes f = 1;
+}
+    

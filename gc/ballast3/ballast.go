@@ -8,17 +8,19 @@ import (
 	"github.com/hitzhangjie/codemaster/gc/rss"
 )
 
-// 方法1
-var ballast = make([]byte, 1<<30)
-
 func main() {
+	// 方法3
+	ballast := make([]byte, 1<<30)
+
+	// do something
 	m := runtime.MemStats{}
 	runtime.ReadMemStats(&m)
 	fmt.Println("alloc:", humanReadableString(m.Sys))
 	fmt.Println("freed", humanReadableString(m.HeapReleased))
 	fmt.Println("rss", humanReadableString(rss.GetRSS()))
-
 	time.Sleep(time.Minute)
+
+	runtime.KeepAlive(&ballast)
 }
 
 func humanReadableString(numOfBytes uint64) string {

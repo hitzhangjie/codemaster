@@ -1,4 +1,4 @@
-package reuseport
+package reuseport_test
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/libp2p/go-reuseport"
 )
 
-func TestReuseport(t *testing.T) {
+func Test_Reuseport(t *testing.T) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		ln, err := reuseport.Listen("tcp", ":8888")
 		if err != nil {

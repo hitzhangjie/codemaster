@@ -1,4 +1,4 @@
-package icmp
+package rawsocket
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"golang.org/x/net/icmp"
 )
 
-func TestICMP(t *testing.T) {
+func Test_ICMP_Via_Rawsocket(t *testing.T) {
 	netaddr, err := net.ResolveIPAddr("ip4", "127.0.0.1")
 	if err != nil {
 		panic(err)

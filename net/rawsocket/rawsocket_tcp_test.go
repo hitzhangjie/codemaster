@@ -1,4 +1,4 @@
-package tcp
+package rawsocket
 
 import (
 	"bytes"
@@ -10,12 +10,15 @@ import (
 	"testing"
 )
 
-func TestTcp(t *testing.T) {
+// this testcase communicate via TCP protocol, but here we use rawsocket,
+// so we encode/decode TCP packet data by ourselves.
+func Test_TCP_Via_RawSocket(t *testing.T) {
 	netaddr, err := net.ResolveIPAddr("ip4", "192.168.1.157")
 	if err != nil {
 		panic(err)
 	}
 
+	// raw socket
 	conn, err := net.ListenIP("ip4:tcp", netaddr)
 	if err != nil {
 		panic(err)
@@ -32,6 +35,7 @@ func TestTcp(t *testing.T) {
 	}
 }
 
+// TCP tcp packet flag
 const (
 	FIN = 1  // 00 0001
 	SYN = 2  // 00 0010
@@ -41,6 +45,28 @@ const (
 	URG = 32 // 10 0000
 )
 
+// TCPHeader header for TCP packet
+/*
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |          Source Port          |       Destination Port        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                        Sequence Number                        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Acknowledgment Number                      |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  Data |           |U|A|P|R|S|F|                               |
+   | Offset| Reserved  |R|C|S|S|Y|I|            Window             |
+   |       |           |G|K|H|T|N|N|                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |           Checksum            |         Urgent Pointer        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    Options                    |    Padding    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                             data                              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+*/
 type TCPHeader struct {
 	Source      uint16
 	Destination uint16
@@ -56,6 +82,7 @@ type TCPHeader struct {
 	Options     []TCPOption
 }
 
+// TCPOption tcp packet options
 type TCPOption struct {
 	Kind   uint8
 	Length uint8

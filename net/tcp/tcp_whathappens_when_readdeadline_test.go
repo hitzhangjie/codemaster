@@ -2,9 +2,7 @@ package tcp_test
 
 import (
 	"fmt"
-	"log"
 	"net"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -15,7 +13,7 @@ import (
 //
 // 读超时连接设置，只是应用程序希望对读取耗时进行控制所进行的一种上层控制操作，不会破坏连接状态，
 // 即使读超时了，也可以通过改大deadline或者去掉deadline继续读取出上面的数据。
-func Test_Read_Timeout_With_ExtraData(t *testing.T) {
+func Test_WhatHappensWhenReadDeadlineExceeded(t *testing.T) {
 	ch := make(chan int, 1)
 
 	go func() {
@@ -109,54 +107,4 @@ func Test_Read_Timeout_With_ExtraData(t *testing.T) {
 
 	// 阻止测试提前退出，快去看下服务端的情况
 	time.Sleep(time.Minute * 5)
-}
-
-func Test_ReadData_And_ReadDeadline(t *testing.T) {
-	ln, err := net.Listen("tcp4", "127.0.0.1:0")
-	if err != nil {
-		panic(err)
-	}
-
-	go func() {
-		for {
-			conn, err := ln.Accept()
-			if err != nil {
-				log.Printf("accept incoming conn fail: %v", err)
-				continue
-			}
-			go func() {
-				buf := make([]byte, 1024)
-				for {
-					// readdeadline控制的是什么呢？可以理解成如果无数据到达时要等多久，
-					// 如果有数据到达，不一定填满buffer，也会返回的。
-					//
-					// 其实联想下epoll的工作原理，这些就都很好理解
-					_ = conn.SetReadDeadline(time.Now().Add(time.Second * 10))
-					n, err := conn.Read(buf)
-					if err != nil {
-						if os.IsTimeout(err) {
-							continue
-						}
-					}
-					log.Printf("read data: %s", string(buf[:n]))
-				}
-			}()
-		}
-	}()
-
-	time.Sleep(time.Second)
-
-	conn, err := net.Dial("tcp4", ln.Addr().String())
-	if err != nil {
-		panic(err)
-	}
-
-	s := []byte("helloworld")
-	time.Sleep(time.Second)
-	conn.Write(s[0:5])
-
-	time.Sleep(time.Second * 15)
-	conn.Write(s[5:])
-
-	time.Sleep(time.Second)
 }

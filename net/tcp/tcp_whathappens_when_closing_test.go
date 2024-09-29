@@ -21,7 +21,7 @@ import (
 // ps: 过程中怀疑跟client、server运行在一个进程中、不同进程中、不同机器上对上述问题是否有影响，
 // 所以将当前测试用例改成了一个可执行程序接受`-mode=[server|client] -addr=ip:port`，也就是是tcp/tcp_whathappens_when_closing/main.go
 // 结论，跟运行在相同进程、不同进程、不同机器没关系，跟网络协议栈对FIN_WAIT2、CLOSE_WAIT、skbuff data、RST这些的处理有关系。多看下协议栈代码吧。
-func Test_tcp_close(t *testing.T) {
+func Test_WhatHappensWhenClosing(t *testing.T) {
 	ch := make(chan int, 1)
 
 	go func() {
@@ -99,7 +99,11 @@ func Test_tcp_close(t *testing.T) {
 					//
 					// 1) 先说下探活问题：
 					// - 这个serverside探活包实际上是个data长度为0的正常tcp包
-					//   TODO Question: 如果A给B发送了FIN包，A还能发探活包给B吗？毕竟它data长度为0？
+					//   ps: 如果A给B发送了FIN包，A还能发探活包给B吗？毕竟它data长度为0？
+					//   - TODO 不应该发送，理由是发送了FIN包表示没有更多数据可以发送，不应该继续发送了
+					//          ps: 那么回tcp probe探活包算不算呢？看上去响应还是可以发的，只要data==0即可
+					//   - TODO 可以发送
+					//
 					// - 在linux中，可以查看net.ipv4.tcp_keepalive_xxx来查看探活参数设置, see: https://tldp.org/HOWTO/TCP-Keepalive-HOWTO/usingkeepalive.html
 					//   简单总结，未开启探活时，linux内核2h后开始发送探活包，每个探活包间隔(探活超时时间是75s)，连续n个探活失败则认为连接dead。
 					//   如果显示指定了开启探活以及对应的参数，那么就按业务层指定的来。

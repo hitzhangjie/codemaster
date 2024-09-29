@@ -7,7 +7,8 @@ import (
 	"time"
 )
 
-var mode = flag.String("mode", "server", "run in server or client mode")
+var addr = flag.String("addr", "localhost:8000", "server listen address")
+var mode = flag.String("mode", "server", "run as `server` or `client`")
 
 // 测试下客户端给服务端发包，发完后立即close连接，服务端过一会再收包，
 // 测试这个时候服务端read返回的 `n, err = conn.Read(buf)`，
@@ -24,21 +25,18 @@ var mode = flag.String("mode", "server", "run in server or client mode")
 func main() {
 	flag.Parse()
 
-	ch := make(chan int, 1)
-
 	switch *mode {
 	case "server":
 		startServer()
 	case "client":
 		startClient()
 	default:
-		panic("invalid mode")
+		panic("invalid argument: -mode")
 	}
-
 }
 
 func startServer() {
-	ln, err := net.Listen("tcp", ":8000")
+	ln, err := net.Listen("tcp", *addr)
 	if err != nil {
 		panic(err)
 	}
@@ -79,9 +77,9 @@ func startServer() {
 	}
 }
 
-func tartClient() {
+func startClient() {
 	// clientside dial and send data to server
-	c, err := net.Dial("tcp", "localhost:8000")
+	c, err := net.Dial("tcp", *addr)
 	if err != nil {
 		panic(err)
 	}

@@ -19,6 +19,17 @@ import (
 //
 //   - 实际上不是的，server在socket buffer里面有数据时即使收到FIN包也只是相当于数据流
 //     末尾插入了一个EOF， 等到read读走数据之后，再次读取才返回EOF.
+
+// 这就需要关心linux kernel什么时候会做tcp连接状态转换：
+// 1) 当服务端收到FIN包+响应ACK后，服务端连接状态会进入CLOSE_WAIT，此时服务端还是可以正常收取buffer里面的数据的；
+// 2) 读完数据后，再次读取才会返回EOF错误。这就是前面说的内核会在有数据时先返回数据。
+//
+// 服务端发现EOF后，判定对端不再继续进行请求，可以考虑主动关闭连接，才会进入LAST_ACK->CLOSED转换，这是一般的正常处理流程。
+// 当然也可能有其他场景，比如我们精心设计的测试用例 tcp_whathappens_when_closing_test.go中，server没关闭连接也不读数据，
+// 而是让tcp probes不断发给client，client处于FIN_WAIT2状态，超时之前它都可以发送tcp probes响应，直到超时发送RST。
+// 服务器收到RST后，在读完skbuff数据后，会直接从CLOSE_WAIT状态迁移到CLOSED状态。
+//
+// see also: tcp_whathappens_when_closing_test.go
 func Test_ReadDataSentBeforeClosed(t *testing.T) {
 	ch := make(chan int, 1)
 

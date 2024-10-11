@@ -13,7 +13,7 @@ import (
 // 因为用例设计的问题，观察到其他现象：
 // - client发送完数据调用了close()，但是还可以正常收到server端发送来的tcp probes，并且还能正常响应？FIN_WAIT2的处理
 // - server端读取到eof后没有调用close()完成四次挥手，但是读取完数据后，lsof看不到连接了，从CLOSE_WAIT状态直接变CLOSED状态了？skbuff的处理，RST的处理
-// - tcp探活逻辑很快，我并没有显示设置tcp探活，那为什么会有tcp probes呢？go标准库默认设置问题
+// - tcp探活逻辑，我并没有显示设置tcp探活，那为什么会有tcp probes呢？go标准库默认设置问题
 // - tcp probes是有哪些参数控制什么时候发送probes，发送间隔是什么，超时时间是什么，连续多少个probes失败才算连接dead？Linux内核参数设置问题
 //
 // ok, 就这些，都搞清楚了。详细的现象、分析，可以看下面的注释。
@@ -101,7 +101,8 @@ func Test_WhatHappensWhenClosing(t *testing.T) {
 					// - 这个serverside探活包实际上是个data长度为0的正常tcp包
 					//   ps: 如果A给B发送了FIN包，A还能发探活包给B吗？毕竟它data长度为0？
 					//   - TODO 不应该发送，理由是发送了FIN包表示没有更多数据可以发送，不应该继续发送了
-					//          ps: 那么回tcp probe探活包算不算呢？看上去响应还是可以发的，只要data==0即可
+					//          ps: 那么回tcp probe探活包算不算呢？看上去响应还是可以发的？探活包是server发过来给client的
+					//			    如果client给server发探活包呢，毕竟data==0? 测试下
 					//   - TODO 可以发送
 					//
 					// - 在linux中，可以查看net.ipv4.tcp_keepalive_xxx来查看探活参数设置, see: https://tldp.org/HOWTO/TCP-Keepalive-HOWTO/usingkeepalive.html

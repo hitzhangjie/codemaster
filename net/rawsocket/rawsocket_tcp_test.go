@@ -12,6 +12,11 @@ import (
 
 // this testcase communicate via TCP protocol, but here we use rawsocket,
 // so we encode/decode TCP packet data by ourselves.
+//
+// net.ListenIP("ip4:tcp", netaddr)尝试创建一个原始套接字，这个需要特殊的权限：
+//   - 尝试以root运行
+//   - 尝试 `go test -c` 构建出测试可执行文件，然后 `sudo setcap cap_net_raw+ep ./rawsocket.test`，
+//     然后 `./rawsocket.test -test.run=Test_TCP_Via_RawSocket` 来执行该测试
 func Test_TCP_Via_RawSocket(t *testing.T) {
 	netaddr, err := net.ResolveIPAddr("ip4", "192.168.1.157")
 	if err != nil {

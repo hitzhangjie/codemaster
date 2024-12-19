@@ -88,3 +88,10 @@ func Test_format_with_UTC_timezone(t *testing.T) {
 	// right: 这种才是正常的
 	println(now.UTC().Format(layoutGlobal))
 }
+
+// timedatectl set-timezone Asia/Shanghai => 2024-12-19 14:39:41 UTC+0800
+// timedatectl set-timezone UTC           => 2024-12-19 06:39:01 UTC+0000
+func Test_format_with_diff_timezone(t *testing.T) {
+	now := time.Now()
+	println(now.Format("2006-01-02 15:04:05 UTC-0700"))
+}

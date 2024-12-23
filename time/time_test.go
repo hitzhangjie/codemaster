@@ -95,3 +95,16 @@ func Test_format_with_diff_timezone(t *testing.T) {
 	now := time.Now()
 	println(now.Format("2006-01-02 15:04:05 UTC-0700"))
 }
+
+// 获取指定时间t对应着星期几
+func Test_weekday(t *testing.T) {
+	now := time.Now()
+	println(now.Format("2006-01-02"))
+	println(now.Weekday().String())
+	println("--------")
+
+	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+	monday := date.AddDate(0, 0, -1*int(now.Weekday()-1))
+	println(monday.Weekday().String())
+	println(monday.Format("2006-01-02"))
+}

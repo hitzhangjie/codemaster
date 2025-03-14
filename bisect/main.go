@@ -37,18 +37,16 @@ func main() {
 	if matcher.ShouldEnable(bisect.Hash(pattern)) {
 		sumv2 := addv2(a, b)
 		if sumv2 != sum {
-			// if matcher.ShouldReport(bisect.Hash(pattern)) {
-			// 	fmt.Println("bug detected in v2: addv2 != addv1")
-			// }
+			if matcher.ShouldReport(bisect.Hash(pattern)) {
+				fmt.Println("bug detected in v2: addv2 != addv1")
+			}
 			os.Exit(1)
 		} else {
 			sum = sumv2
 		}
 	} else {
 		sum = addv1(a, b)
-	}
-	if matcher.ShouldReport(bisect.Hash(pattern)) {
-		fmt.Println("v2")
+		fmt.Println("Using addv1")
 	}
 
 	fmt.Printf("%d + %d = %d\n", a, b, sum)

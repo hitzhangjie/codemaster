@@ -10,31 +10,21 @@
 	bisect: run: FEAT1=n FEAT2=n FEAT3=n ./main... ok (0 matches)
 	bisect: run: FEAT1=n FEAT2=n FEAT3=n ./main... ok (0 matches)
 	bisect: checking target with all changes enabled
-	bisect: run: FEAT1=y FEAT2=y FEAT3=y ./main... FAIL (3 matches)
-	bisect: run: FEAT1=y FEAT2=y FEAT3=y ./main... FAIL (3 matches)
+	bisect: run: FEAT1=y FEAT2=y FEAT3=y ./main... FAIL (1 matches)
+	bisect: run: FEAT1=y FEAT2=y FEAT3=y ./main... FAIL (1 matches)
 	bisect: target succeeds with no changes, fails with all changes
 	bisect: searching for minimal set of enabled changes causing failure
-	bisect: run: FEAT1=+0 FEAT2=+0 FEAT3=+0 ./main... ok (0 matches)
-	bisect: run: FEAT1=+0 FEAT2=+0 FEAT3=+0 ./main... ok (0 matches)
-	bisect: run: FEAT1=+1 FEAT2=+1 FEAT3=+1 ./main... ok (0 matches)
-	bisect: run: FEAT1=+1 FEAT2=+1 FEAT3=+1 ./main... ok (0 matches)
-	bisect: run: FEAT1=+0+1 FEAT2=+0+1 FEAT3=+0+1 ./main... FAIL (2 matches)
-	bisect: run: FEAT1=+0+1 FEAT2=+0+1 FEAT3=+0+1 ./main... FAIL (2 matches)
-	bisect: run: FEAT1=+00+1 FEAT2=+00+1 FEAT3=+00+1 ./main... FAIL (1 matches)
-	bisect: run: FEAT1=+00+1 FEAT2=+00+1 FEAT3=+00+1 ./main... FAIL (1 matches)
-	bisect: run: FEAT1=+1+x70 FEAT2=+1+x70 FEAT3=+1+x70 ./main... FAIL (1 matches)
-	bisect: run: FEAT1=+1+x70 FEAT2=+1+x70 FEAT3=+1+x70 ./main... FAIL (1 matches)
 	bisect: confirming failing change set
-	bisect: run: FEAT1=v+x70+x89 FEAT2=v+x70+x89 FEAT3=v+x70+x89 ./main... FAIL (2 matches)
-	bisect: run: FEAT1=v+x70+x89 FEAT2=v+x70+x89 FEAT3=v+x70+x89 ./main... FAIL (2 matches)
+	bisect: run: FEAT1=v+x9 FEAT2=v+x9 FEAT3=v+x9 ./main... ok (1 matches)
+	bisect: run: FEAT1=v+x9 FEAT2=v+x9 FEAT3=v+x9 ./main... ok (1 matches)
+	bisect: confirmation run succeeded unexpectedly
 	bisect: FOUND failing change set
 	--- change set #1 (enabling changes causes failure)
-	main.go:56 feat2() called
-	main.go:63 feat1() called
+	/home/zhangjie/hitzhangjie/codemaster/bisectv2/main.go:96 feat2() called
 	---
 	bisect: checking for more failures
-	bisect: run: FEAT1=-x70-x89 FEAT2=-x70-x89 FEAT3=-x70-x89 ./main... ok (0 matches)
-	bisect: run: FEAT1=-x70-x89 FEAT2=-x70-x89 FEAT3=-x70-x89 ./main... ok (0 matches)
+	bisect: run: FEAT1=-x9 FEAT2=-x9 FEAT3=-x9 ./main... ok (0 matches)
+	bisect: run: FEAT1=-x9 FEAT2=-x9 FEAT3=-x9 ./main... ok (0 matches)
 	bisect: target succeeds with all remaining changes enabled
 	```
 */
@@ -90,6 +80,9 @@ func main() {
 	go func() {
 		// lock, missing unlock
 		if changelist2Matcher.ShouldEnable(h2) {
+			if changelist2Matcher.ShouldReport(h2) {
+				fmt.Printf("%s %s feat2() called\n", flielineno(+2), bisect.Marker(h2))
+			}
 			feat2()
 		} else {
 			fmt.Println("disable feat2()")
@@ -97,6 +90,9 @@ func main() {
 
 		// lock, and unlock
 		if changelist1Matcher.ShouldEnable(h1) {
+			if changelist2Matcher.ShouldReport(h2) {
+				fmt.Printf("%s %s feat2() called\n", flielineno(+2), bisect.Marker(h2))
+			}
 			feat1()
 		} else {
 			fmt.Println("disable feat1()")
@@ -104,6 +100,9 @@ func main() {
 
 		// no lock operation
 		if changelist3Matcher.ShouldEnable(h3) {
+			if changelist2Matcher.ShouldReport(h2) {
+				fmt.Printf("%s %s feat2() called\n", flielineno(+2), bisect.Marker(h2))
+			}
 			feat3()
 		} else {
 			fmt.Println("disable feat3()")
@@ -115,15 +114,6 @@ func main() {
 	case <-ch:
 		os.Exit(0)
 	case <-time.After(time.Second):
-		if changelist2Matcher.ShouldReport(h2) {
-			fmt.Printf("main.go:56 %s feat2() called\n", bisect.Marker(h2))
-		}
-		if changelist1Matcher.ShouldReport(h1) {
-			fmt.Printf("main.go:63 %s feat1() called\n", bisect.Marker(h1))
-		}
-		if changelist3Matcher.ShouldReport(h3) {
-			fmt.Printf("main.go:70 %s feat3() called\n", bisect.Marker(h3))
-		}
 		os.Exit(1)
 	}
 }
@@ -153,31 +143,7 @@ func feat3() error {
 	return nil
 }
 
-func callstack(offset int) []string {
-	callerspc := make([]uintptr, 8)
-	n := runtime.Callers(2, callerspc)
-	callerspc = callerspc[:n]
-	frames := runtime.CallersFrames(callerspc)
-	var stack []string
-
-	calcOffset := true
-	for {
-		f, more := frames.Next()
-		if calcOffset {
-			stack = append(stack, fmt.Sprintf("%s at %s:%d", f.Function, f.File, f.Line+offset))
-			calcOffset = false
-		} else {
-			stack = append(stack, fmt.Sprintf("%s at %s:%d", f.Function, f.File, f.Line))
-		}
-		if !more {
-			break
-		}
-	}
-	return stack
-}
-
-func printstack(stack []string) {
-	for i := 0; i < len(stack); i++ {
-		fmt.Printf("\t%s\n", stack[i])
-	}
+func flielineno(offset int) string {
+	_, file, line, _ := runtime.Caller(1)
+	return fmt.Sprintf("%s:%d", file, line+offset)
 }

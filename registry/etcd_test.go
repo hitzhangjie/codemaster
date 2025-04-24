@@ -17,6 +17,8 @@ func Test_etcd_register(t *testing.T) {
 		Endpoints:         []string{"http://localhost:2379"},
 		DialTimeout:       time.Second,
 		DialKeepAliveTime: time.Second,
+		// AutoSyncInterval 允许etcdclient通过Cluster.MemberList获取服务器的Members信息用于后续的负载均衡，以及提高可用性等
+		AutoSyncInterval: time.Second,
 	})
 	require.Nil(t, err)
 

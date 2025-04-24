@@ -18,6 +18,9 @@ func Test_etcd_register(t *testing.T) {
 		DialTimeout:       time.Second,
 		DialKeepAliveTime: time.Second,
 		// AutoSyncInterval 允许etcdclient通过Cluster.MemberList获取服务器的Members信息用于后续的负载均衡，以及提高可用性等
+		// - 意味着，即使endpoints只配置1个，它也能拿到服务器的集群信息，前提是刚开始的endpoint要能正常访问
+		// - 1) 一般并不推荐打开，默认是关闭的，因为它会定期和etcd集群同步member信息，大多数情况下没必要
+		// - 2) 一般鼓励endpoints配置项中配置多个members，或者通过域名、通过CLB来访问
 		AutoSyncInterval: time.Second,
 	})
 	require.Nil(t, err)

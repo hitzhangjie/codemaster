@@ -1,6 +1,6 @@
 module github.com/hitzhangjie/codemaster
 
-go 1.22.4
+go 1.22.2
 
 require (
 	github.com/RoaringBitmap/roaring v0.9.4

@@ -26,7 +26,7 @@ func getListener(network, address string) (net.Listener, error) {
 	hotRestart, _ := strconv.ParseBool(flag)
 
 	if !hotRestart {
-		fmt.Println("server started")
+		fmt.Println("server started, pid: ", os.Getpid())
 		os.Setenv(hotRestartFlag, "1")
 
 		return reuseport.Listen(network, address)
@@ -60,6 +60,11 @@ func getListener(network, address string) (net.Listener, error) {
 func startHttpServer(listener net.Listener) error {
 
 	http.HandleFunc("/hello", func(w http.ResponseWriter, req *http.Request) {
+		defer func() {
+			if e := recover(); e != nil {
+				fmt.Println("panic: ", e)
+			}
+		}()
 		fmt.Fprintf(w, "Hello from %d\n", os.Getpid())
 	})
 
@@ -102,6 +107,12 @@ func forkWithFile(listener net.Listener) {
 	}
 
 	fmt.Printf("fork succ, pid: %d\n", pid)
+
+	// here listenerFile must be closed, otherwise the listener will be closed when the parent process exits
+	// listenerFile.Close()
+	//
+	_ = listener.Close()
+	time.Sleep(time.Hour)
 }
 
 func handleSignal(signal os.Signal, listener net.Listener) {
@@ -126,7 +137,7 @@ func main() {
 	go func() {
 		err := startHttpServer(ln)
 		if err != nil {
-			panic(err)
+			fmt.Printf("http server error: %v\n", err)
 		}
 	}()
 

@@ -54,7 +54,7 @@ func Test_formatAndParseTimezoneOffset(t *testing.T) {
 		parsed, err := time.Parse(layoutNoTZ, evt.Time)
 		assert.NoError(t, err)
 
-		// 此时如果基于unixnano进行对比，发现是不相同的，因为parse时layout里丢失了时区便宜量
+		// 此时如果基于unixnano进行对比，发现是不相同的，因为parse时layout里丢失了时区偏移量
 		assert.Equal(t, "UTC", parsed.Location().String(), "layout不带时区parse出来总是UTC")
 		assert.NotEqual(t, now.UnixNano(), parsed.UnixNano(), "unixnano 应不同，因为丢失了时区便宜量")
 	})

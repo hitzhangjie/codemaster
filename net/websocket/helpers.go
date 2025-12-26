@@ -4,10 +4,23 @@ package websocket
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+// broadcastHub 管理所有 WebSocket 连接，用于广播消息
+type broadcastHub struct {
+	// 所有连接的客户端
+	clients map[*websocket.Conn]bool
+	// 保护 clients 的互斥锁
+	mu sync.RWMutex
+}
+
+var hub = &broadcastHub{
+	clients: make(map[*websocket.Conn]bool),
+}
 
 // echoHandler 回显所有收到的消息
 func echoHandler(w http.ResponseWriter, r *http.Request) {
@@ -147,17 +160,37 @@ func broadcastHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	// 读取客户端消息并回显
+	// 注册新连接
+	hub.mu.Lock()
+	hub.clients[conn] = true
+	hub.mu.Unlock()
+
+	// 连接断开时从列表中移除
+	defer func() {
+		hub.mu.Lock()
+		delete(hub.clients, conn)
+		hub.mu.Unlock()
+	}()
+
+	// 读取客户端消息并广播给所有客户端
 	for {
 		messageType, message, err := conn.ReadMessage()
 		if err != nil {
 			break
 		}
 
-		// 回显给发送者
-		err = conn.WriteMessage(messageType, message)
-		if err != nil {
-			break
+		// 广播给所有连接的客户端
+		hub.mu.RLock()
+		for client := range hub.clients {
+			if err := client.WriteMessage(messageType, message); err != nil {
+				// 如果写入失败，可能是连接已断开，从列表中移除
+				hub.mu.RUnlock()
+				hub.mu.Lock()
+				delete(hub.clients, client)
+				hub.mu.Unlock()
+				hub.mu.RLock()
+			}
 		}
+		hub.mu.RUnlock()
 	}
 }

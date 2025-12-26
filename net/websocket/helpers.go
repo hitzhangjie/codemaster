@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/siddontang/go-log/log"
 )
 
 // broadcastHub 管理所有 WebSocket 连接，用于广播消息
@@ -95,6 +96,7 @@ func pingPongHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 设置 Pong 处理函数
 	conn.SetPongHandler(func(appData string) error {
+		log.Infof("收到 Pong: %s", appData)
 		return nil
 	})
 
@@ -113,6 +115,7 @@ func pingPongHandler(w http.ResponseWriter, r *http.Request) {
 			case <-ticker.C:
 				err := conn.WriteControl(websocket.PingMessage, []byte("ping from server"), time.Now().Add(5*time.Second))
 				if err != nil {
+					log.Errorf("发送 Ping 失败: %v", err)
 					return
 				}
 			}

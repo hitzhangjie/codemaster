@@ -15,6 +15,7 @@ require (
 	github.com/goccy/go-json v0.10.2
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.3.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/iancoleman/strcase v0.2.0
 	github.com/influxdata/tdigest v0.0.1
 	github.com/json-iterator/go v1.1.12
@@ -28,6 +29,8 @@ require (
 	github.com/segmentio/encoding v0.3.6
 	github.com/smartystreets-prototypes/go-disruptor v0.0.0-20200316140655-c96477fd7a6a
 	github.com/spaolacci/murmur3 v1.1.0
+	github.com/spf13/cobra v1.8.1
+	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
 	github.com/v2pro/plz v0.0.0-20200805122259-422184e41b6e
 	github.com/zeebo/xxh3 v1.0.2
@@ -50,8 +53,6 @@ require (
 require (
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
-	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
-	github.com/chenzhuoyu/iasm v0.9.0 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
@@ -71,8 +72,6 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/siddontang/go v0.0.0-20180604090527-bdc77568d726 // indirect
 	github.com/siddontang/go-log v0.0.0-20180807004314-8d05993dda07 // indirect
-	github.com/spf13/cobra v1.8.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.15 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.15 // indirect

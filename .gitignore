@@ -28,4 +28,4 @@ serialization/json_benchmark/testdata/
 tls/tls_tcp/certs/
 tls/tls_grpc/certs/
 
-
+*.wasm

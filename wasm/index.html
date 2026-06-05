@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Go WASM Hello World</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 640px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      line-height: 1.5;
+    }
+    h1 { font-size: 1.5rem; }
+    button {
+      margin-right: 0.5rem;
+      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+    }
+    #output {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f4f4f5;
+      border-radius: 8px;
+      white-space: pre-wrap;
+    }
+    .status { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Go WASM Hello World</h1>
+  <p class="status" id="status">Loading WASM...</p>
+
+  <div>
+    <button id="btn-greet" disabled>Greet</button>
+    <button id="btn-add" disabled>1 + 2</button>
+  </div>
+
+  <div id="output"></div>
+
+  <script src="wasm_exec.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
